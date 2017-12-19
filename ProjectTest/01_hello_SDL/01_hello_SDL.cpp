@@ -25,8 +25,9 @@ int main( int argc, char* args[] )
 	else
 	{
 		//Create window
-		window = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, 
+		window = SDL_CreateWindow( "Customized Window", SDL_WINDOWPOS_UNDEFINED, 
 			SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		// SDL_WINDOW_SHOWN by default, if SDL_WINDOW_HIDDEN is not set.
 		if( window == NULL )
 		{
 			printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
