@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 //Starts up SDL and creates window
-bool init( SDL_Window* gWindow, SDL_Surface* gScreenSurface )
+/*bool init( SDL_Window* gWindow, SDL_Surface* gScreenSurface )
 {
     //Initialization flag
     bool success = true;
@@ -18,7 +18,7 @@ bool init( SDL_Window* gWindow, SDL_Surface* gScreenSurface )
     {
         //Create window
         gWindow = SDL_CreateWindow( "Customized Window", SDL_WINDOWPOS_UNDEFINED, 
-        	SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN );
+            SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -32,37 +32,31 @@ bool init( SDL_Window* gWindow, SDL_Surface* gScreenSurface )
     }
 
     return success;
-}
+}*/
 
 //Loads media
-bool loadMedia( SDL_Surface* srcSurface )
+SDL_Surface* loadMedia( SDL_Surface* gHelloWorld )
 {
-    //Loading success flag
-    bool success = true;
-
     //Load splash image
-    //The new surface should be freed with SDL_FreeSurface().
-    srcSurface = SDL_LoadBMP( "02_image_on_screen/FFXV.bmp" );
-
-    if( srcSurface == NULL )
+    gHelloWorld = SDL_LoadBMP( "02_image_on_screen/FFXV.bmp" );
+    if( gHelloWorld == NULL )
     {
         printf( "Unable to load image %s! SDL Error: %s\n", "02_image_on_screen/FFXV.bmp", SDL_GetError() );
-        success = false;
     }
     else
     {
-        printf( "Load image successfully.\n" );        
+        printf("Load image successfully.\n");
     }
 
-    return success;
+    return gHelloWorld;
 }
 
 //Frees media and shuts down SDL
-void close( SDL_Window* gWindow, SDL_Surface* gSurface )
+void close( SDL_Window* gWindow, SDL_Surface* gHelloWorld )
 {
     //Deallocate surface
-    SDL_FreeSurface( gSurface );
-    gSurface = NULL;
+    SDL_FreeSurface( gHelloWorld );
+    gHelloWorld = NULL;
 
     //Destroy window
     SDL_DestroyWindow( gWindow );

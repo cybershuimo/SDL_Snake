@@ -4,17 +4,19 @@ and may not be redistributed without written permission.*/
 //Using SDL and standard IO
 #include <SDL.h>
 #include <stdio.h>
-#include "02_headtest.h"
-
-//Starts up SDL and creates window
-bool init();
-
-//Frees media and shuts down SDL
-void close();
 
 //Screen dimension constants
-//const int SCREEN_WIDTH = 640;
-//const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 480;
+
+//Starts up SDL and creates window
+//bool init();
+
+//Loads media
+//bool loadMedia();
+
+//Frees media and shuts down SDL
+//void close();
 
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
@@ -25,7 +27,7 @@ SDL_Surface* gScreenSurface = NULL;
 //The image we will load and show on the screen
 SDL_Surface* gHelloWorld = NULL;
 
-
+//Starts up SDL and creates window
 bool init()
 {
     //Initialization flag
@@ -40,8 +42,8 @@ bool init()
     else
     {
         //Create window
-        gWindow = SDL_CreateWindow( "Test Window", SDL_WINDOWPOS_UNDEFINED, 
-            SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "Customized Window", SDL_WINDOWPOS_UNDEFINED, 
+        	SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() );
@@ -52,6 +54,27 @@ bool init()
             //Get window surface
             gScreenSurface = SDL_GetWindowSurface( gWindow );
         }
+    }
+
+    return success;
+}
+
+//Loads media
+bool loadMedia()
+{
+    //Loading success flag
+    bool success = true;
+
+    //Load splash image
+    gHelloWorld = SDL_LoadBMP( "02_image_on_screen/FFXV.bmp" );
+    if( gHelloWorld == NULL )
+    {
+        printf( "Unable to load image %s! SDL Error: %s\n", "02_image_on_screen/FFXV.bmp", SDL_GetError() );
+        success = false;
+    }
+    else
+    {
+        printf("Load image successfully.\n");
     }
 
     return success;
@@ -83,33 +106,24 @@ int main( int argc, char* args[] )
 	else
 	{
 		//Load image
-		gHelloWorld = loadMedia( gHelloWorld );
-		if ( gHelloWorld == NULL )
+		if ( !loadMedia() )
 		{
 			printf( "Failed to load media!\n" );
 		}
 		else
-		{
-			//Apply the image
-			SDL_BlitSurface( gHelloWorld, NULL, gScreenSurface, NULL );
-			
-			//Update the surface
-            //SDL_UpdateWindowSurface( gWindow );
-            if ( SDL_UpdateWindowSurface( gWindow ) != 0 )
-			{
-				printf( "Unable to update window %s! SDL Error: %s\n", "gWindow", SDL_GetError() );
-			}
-			else
-			{
-				printf("Update window successfully.\n");
-			}
+        {
+            //Apply the image
+            SDL_BlitSurface( gHelloWorld, NULL, gScreenSurface, NULL );
+        
+            //Update the surface
+            SDL_UpdateWindowSurface( gWindow );
 
-			//Wait two seconds
-			SDL_Delay( 5000 );
-		}
+            //Wait two seconds
+            SDL_Delay( 1000 );
+        }
 	}
 
-	//Frees media and shuts down SDL
+	//Free resources and close SDL
 	close();
 
 	return 0;

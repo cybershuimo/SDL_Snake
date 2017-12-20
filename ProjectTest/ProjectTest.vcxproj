@@ -18,6 +18,14 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="02_image_on_screen\02_functions.h" />
+    <ClInclude Include="02_image_on_screen\02_headtest.h" />
+    <ClInclude Include="02_image_on_screen\testhead.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="02_image_on_screen\02_image_on_screen.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{F903B330-2C18-407E-A2CB-E3241480456C}</ProjectGuid>
@@ -117,13 +125,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="01_hello_SDL\01_hello_SDL.cpp" />
-    <ClCompile Include="02_image_on_screen\02_image_on_screen.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="02_image_on_screen\02_functions.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
