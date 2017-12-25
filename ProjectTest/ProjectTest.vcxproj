@@ -19,12 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="02_image_on_screen\02_functions.h" />
-    <ClInclude Include="02_image_on_screen\02_headtest.h" />
-    <ClInclude Include="02_image_on_screen\testhead.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="02_image_on_screen\02_image_on_screen.cpp" />
+    <ClCompile Include="06_extension_libraries_and_loading_other_image_formats\06_extension_libraries_and_loading_other_image_formats.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -77,8 +72,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\ucrt;E:\CS50\SDL\vs_dev_lib\SDL2-2.0.7\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.15063.0\ucrt\x86;E:\CS50\SDL\vs_dev_lib\SDL2-2.0.7\lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\ucrt;E:\CS50\SDL\vs_dev_lib\SDL2-2.0.7\include;E:\CS50\SDL\vs_dev_lib\SDL2_image-2.0.2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.15063.0\ucrt\x86;E:\CS50\SDL\vs_dev_lib\SDL2-2.0.7\lib\x86;E:\CS50\SDL\vs_dev_lib\SDL2_image-2.0.2\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,7 +83,7 @@
       <AdditionalIncludeDirectories>E:\CS50\SDL\Projects\ProjectTest\ProjectTest\02_image_on_screen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
