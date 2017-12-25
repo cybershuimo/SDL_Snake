@@ -30,7 +30,7 @@ SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 
 //Current displayed PNG image
-SDL_Surface* gPNGSurface = NULL;
+SDL_Surface* gJPGSurface = NULL;
 
 bool init()
 {
@@ -55,7 +55,7 @@ bool init()
 		else
 		{
 			//Initialize PNG loading
-			int imgFlags = IMG_INIT_PNG;
+			int imgFlags = IMG_INIT_JPG;
 			if( !( IMG_Init( imgFlags ) & imgFlags ) )	//IMG_Init( imgFlags ) should return imgFlags if init success...
 			{
 				printf( "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError() );
@@ -78,8 +78,8 @@ bool loadMedia()
 	bool success = true;
 
 	//Load PNG surface
-	gPNGSurface = loadSurface( "06_extension_libraries_and_loading_other_image_formats/loaded.png" );
-	if( gPNGSurface == NULL )
+	gJPGSurface = loadSurface( "06_extension_libraries_and_loading_other_image_formats/FFXV.jpg" );
+	if( gJPGSurface == NULL )
 	{
 		printf( "Failed to load PNG image!\n" );
 		success = false;
@@ -91,8 +91,8 @@ bool loadMedia()
 void close()
 {
 	//Free loaded image
-	SDL_FreeSurface( gPNGSurface );
-	gPNGSurface = NULL;
+	SDL_FreeSurface( gJPGSurface );
+	gJPGSurface = NULL;
 
 	//Destroy window
 	SDL_DestroyWindow( gWindow );
@@ -167,7 +167,7 @@ int main( int argc, char* args[] )
 				}
 
 				//Apply the PNG image
-				SDL_BlitSurface( gPNGSurface, NULL, gScreenSurface, NULL );
+				SDL_BlitSurface( gJPGSurface, NULL, gScreenSurface, NULL );
 			
 				//Update the surface
 				SDL_UpdateWindowSurface( gWindow );
