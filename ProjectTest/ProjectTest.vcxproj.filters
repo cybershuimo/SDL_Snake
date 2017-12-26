@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="06_extension_libraries_and_loading_other_image_formats\06_extension_libraries_and_loading_other_image_formats.cpp">
+    <ClCompile Include="07_texture_loading_and_rendering\07_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
