@@ -150,15 +150,25 @@ int main( int argc, char* args[] )
                 SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0x00, 0xFF );        
                 SDL_RenderDrawRect( gRenderer, &outlineRect );
 
-                //Draw horizontal line of black dots
-                SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0x00, 0xFF );
-                for( int i = 0; i < SCREEN_WIDTH; i += 4 )
+                //Draw horizontal line of red dots
+                SDL_SetRenderDrawColor( gRenderer, 0xFF, 0x00, 0x00, 0xFF );
+                int m = SCREEN_WIDTH / 4;
+                SDL_Point* p_points = new SDL_Point [m];
+                //Get an array of m points
+                for (int i = 0; i < m; ++i)
                 {
-                    SDL_RenderDrawPoint( gRenderer, i, SCREEN_HEIGHT / 2);
+                	(p_points[i]).x = i * 4;	// x, y coordinates of the point
+                	(p_points[i]).y = SCREEN_HEIGHT / 2;
                 }
+                SDL_RenderDrawPoints( gRenderer, p_points, m );
+                // for( int i = 0; i < SCREEN_WIDTH; i += 4 )
+                // {
+                //     SDL_RenderDrawPoint( gRenderer, i, SCREEN_HEIGHT / 2);
+                // }
 
 				//Update the surface
 				SDL_RenderPresent( gRenderer );
+				delete [] p_points;
 			}
 		}
 	}
