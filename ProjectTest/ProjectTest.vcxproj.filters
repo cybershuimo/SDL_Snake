@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="08_geometry_rendering\08_test.cpp">
+    <ClCompile Include="10_color_keying\10_test_color_keying.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
