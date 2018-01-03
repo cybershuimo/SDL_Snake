@@ -175,7 +175,7 @@ bool init()
     else
     {
         //Create window
-        gWindow = SDL_CreateWindow( "SDL Tutorial_10", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "SDL Tutorial_12", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -216,7 +216,7 @@ bool loadMedia()
     bool success = true;
 
     //Load JPG surface
-    if( !gBackgroundTexture.loadFromFile( "12_color_modulation/colors.png" ) )
+    if( !gBackgroundTexture.loadFromFile( "02_image_on_screen/FFXV.jpg" ) )
     {
         printf( "Failed to load background texture!\n" );
         success = false;
