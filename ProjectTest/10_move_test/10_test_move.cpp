@@ -1,4 +1,5 @@
 //10_move_test
+// Animated sprite, and Vertical Sync
 // Render multiple images on the screen, some of which has transparent backgrounds
 // Use keyboard input to move sprite on background texture
 
@@ -23,7 +24,8 @@ class LTexture
         ~LTexture();
 
         //Loads image at specified path
-        bool loadFromFile( std::string path, int transparentR,  int transparentG, int transparentB );
+        bool loadFromFile( std::string path, int flag = SDL_FALSE,
+         int transparentR = 0, int transparentG = 0, int transparentB = 0 );
 
         //Deallocates texture
         void free();
@@ -51,6 +53,10 @@ SDL_Window* gWindow = NULL;
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
 
+//Walking animation, clip rendering
+const int WALKING_ANIMATION_FRAMES = 4;
+SDL_Rect gSpriteClips[ WALKING_ANIMATION_FRAMES ];
+
 //Scene textures (two image to render)
 LTexture gFooTexture;
 LTexture gBackgroundTexture;
@@ -73,7 +79,7 @@ LTexture::~LTexture()
 }
 
 // Load image from specific path
-bool LTexture::loadFromFile( std::string path, int transparentR,  int transparentG, int transparentB )
+bool LTexture::loadFromFile( std::string path, int flag, int transparentR, int transparentG, int transparentB )
 {
     //Initialization flag
     bool success = true;
@@ -90,7 +96,8 @@ bool LTexture::loadFromFile( std::string path, int transparentR,  int transparen
     else
     {
         //Color key image, use SDL_SetColorKey() to set the color key (transparent pixel) in a surface
-        SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, transparentR, 
+        // int flag set SDL_TRUE to enable color key, SDL_FALSE to disable color key
+        SDL_SetColorKey( loadedSurface, flag, SDL_MapRGB( loadedSurface->format, transparentR, 
             transparentG, transparentB ) );
         //Create texture from surface pixels
         mTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
@@ -176,7 +183,8 @@ bool init()
         else
         {
             //Create renderer for window
-            gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED );
+            //we want to use Vertical Sync. VSync allows the rendering to update at the same time as when your monitor updates during vertical refresh. (Not run too fast.)
+            gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC );
             if( gRenderer == NULL )
             {
                 printf( "Renderer could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -207,15 +215,42 @@ bool loadMedia()
     //Loading success flag
     bool success = true;
 
-    //Load JPG surface
-    if( gFooTexture.loadFromFile( "10_color_keying/foo3.png", 255, 0, 0 ) 
-        && gBackgroundTexture.loadFromFile( "10_color_keying/background.png", 0, 255, 0 ) )
+    //Load background texture
+    if( !gBackgroundTexture.loadFromFile( "10_move_test/background.png" ) )
     {
-        printf( "Load all texture images successfully\n" );
+        printf( "Failed to load background texture!\n" );
+        success = false;
+    }
+
+    //Load sprite sheet texture
+    if( !gFooTexture.loadFromFile( "14_animated_sprites_and_vsync/foo.png", SDL_TRUE, 0, 255, 255 ) )
+    {
+        printf( "Failed to load walking animation texture!\n" );
+        success = false;
     }
     else
     {
-        success = false;
+        
+        //Set sprite clips
+        gSpriteClips[ 0 ].x =   0;
+        gSpriteClips[ 0 ].y =   0;
+        gSpriteClips[ 0 ].w =  64;
+        gSpriteClips[ 0 ].h = 205;
+
+        gSpriteClips[ 1 ].x =  64;
+        gSpriteClips[ 1 ].y =   0;
+        gSpriteClips[ 1 ].w =  64;
+        gSpriteClips[ 1 ].h = 205;
+        
+        gSpriteClips[ 2 ].x = 128;
+        gSpriteClips[ 2 ].y =   0;
+        gSpriteClips[ 2 ].w =  64;
+        gSpriteClips[ 2 ].h = 205;
+
+        gSpriteClips[ 3 ].x = 196;
+        gSpriteClips[ 3 ].y =   0;
+        gSpriteClips[ 3 ].w =  64;
+        gSpriteClips[ 3 ].h = 205;
     }
 
     return success;
@@ -262,9 +297,12 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 
-            //Movement handler
+            //Track current animation frame
+            int frame = 0;
+
+            //Movement handler; starting position
             int x = 240;
-            int y = 180;
+            int y = 100;
 
 			//While application is running
 			while( !quit )
@@ -312,28 +350,41 @@ int main( int argc, char* args[] )
                 //Render background texture to screen
                 gBackgroundTexture.render( 0, 0 );
 
+                //Determine which frame to render, change sprite clip every 6 frames
+                SDL_Rect* currentClip = &gSpriteClips[ frame / 6 ];
+
                 //Check if movement out of board
                 if ( x < 0 )
                 {
                     x = 0;
                 }
-                else if ( x + gFooTexture.getWidth() > gBackgroundTexture.getWidth() )
+                else if ( x + currentClip->w > gBackgroundTexture.getWidth() )
                 {
-                    x = gBackgroundTexture.getWidth() - gFooTexture.getWidth();
+                    x = gBackgroundTexture.getWidth() - currentClip->w;
                 }
                 else if ( y < 0 )
                 {
                     y = 0;
                 }
-                else if ( y + gFooTexture.getHeight() > gBackgroundTexture.getHeight() )
+                else if ( y + currentClip->h > gBackgroundTexture.getHeight() )
                 {
-                    y = gBackgroundTexture.getHeight() - gFooTexture.getHeight();
+                    y = gBackgroundTexture.getHeight() - currentClip->h;
                 }
+
                 //Render sprite texture to screen
-                gFooTexture.render( x, y );
+                gFooTexture.render( x, y, currentClip );
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
+
+                //Go to next frame
+                ++frame;
+
+                //Cycle animation
+                if( frame / 6 >= WALKING_ANIMATION_FRAMES )
+                {
+                    frame = 0;
+                }
 			}
 		}
 	}
