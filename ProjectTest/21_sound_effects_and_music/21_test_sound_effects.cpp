@@ -1,10 +1,9 @@
-// 17_mouse_events, handles mouse events such as mouse motion, mouse button presses, and mouse button releasing.
-// If one of these three mouse events do occur, we check the mouse position using SDL_GetMouseState. 
-// Depending on whether the mouse is over the button or not, we'll want to display different sprites.
+// 21_sound_effects, using SDL_mixer to play audio
 
 //Using SDL, SDL_image, standard IO, and strings
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <stdio.h>
 #include <string>
 
@@ -68,12 +67,16 @@ SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 
 //Texture to render
-LTexture gUpTexture;
-LTexture gDownTexture;
-LTexture gLeftTexture;
-LTexture gRightTexture;
-LTexture gPressTexture;
-LTexture gBGTexture;
+LTexture gPromptTexture;
+
+//The music that will be played
+Mix_Music *gMusic = NULL;
+
+//The sound effects that will be used
+Mix_Chunk *gScratch = NULL;
+Mix_Chunk *gHigh = NULL;
+Mix_Chunk *gMedium = NULL;
+Mix_Chunk *gLow = NULL;
 
 // Now to build the class methods
 // Initializes
@@ -242,7 +245,7 @@ bool init()
     bool success = true;
 
     //Initialize SDL
-    if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+    if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
     {
         printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
         success = false;
@@ -250,7 +253,7 @@ bool init()
     else
     {
         //Create window
-        gWindow = SDL_CreateWindow( "SDL Test_18", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "SDL Test_21 Light some music", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -278,12 +281,21 @@ bool init()
                     success = false;
                 }
 
-                //  //Initialize SDL_ttf
-                // if( TTF_Init() == -1 )
-                // {
-                //     printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
-                //     success = false;
-                // }
+                //Initialize SDL_mixer
+                if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+                {
+                    printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+                    success = false;
+                }
+
+                // load support for the OGG and MOD sample/music formats
+                int sfxFlags = MIX_INIT_MP3;
+                if( !( Mix_Init( sfxFlags ) & sfxFlags ) )
+                {
+                    printf("Mix_Init: Failed to init required mp3 support!\n");
+                    printf("Mix_Init: %s\n", Mix_GetError());
+                    // handle error
+                }
             }
         }
     }
@@ -298,34 +310,46 @@ bool loadMedia()
     bool success = true;
 
     //Loading from resource
-    if( !gUpTexture.loadFromFile( "18_key_states/up.png" ) )
-    {
-        printf( "Failed to load up key texture!\n" );
-        success = false;
-    }
-    else if ( !gDownTexture.loadFromFile( "18_key_states/down.png" ) )
-    {
-        printf( "Failed to load down key texture!\n" );
-        success = false;
-    }
-    else if ( !gLeftTexture.loadFromFile( "18_key_states/left.png" ) )
-    {
-        printf( "Failed to load left key texture!\n" );
-        success = false;
-    }
-    else if ( !gRightTexture.loadFromFile( "18_key_states/right.png" ) )
-    {
-        printf( "Failed to load right key texture!\n" );
-        success = false;
-    }
-    else if ( !gPressTexture.loadFromFile( "18_key_states/press.png" ) )
-    {
-        printf( "Failed to load press key texture!\n" );
-        success = false;
-    }
-    else if ( !gBGTexture.loadFromFile( "10_move_test/background.png" ) )
+    if( !gPromptTexture.loadFromFile( "21_sound_effects_and_music/prompt.png" ) )
     {
         printf( "Failed to load background texture!\n" );
+        success = false;
+    }
+    
+    //Load music
+    gMusic = Mix_LoadMUS( "21_sound_effects_and_music/Hawaii.mp3" );
+    if( gMusic == NULL )
+    {
+        printf( "Failed to load music! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    //Load sound effects
+    gScratch = Mix_LoadWAV( "21_sound_effects_and_music/scratch.wav" );
+    if( gScratch == NULL )
+    {
+        printf( "Failed to load scratch sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    gHigh = Mix_LoadWAV( "21_sound_effects_and_music/high.wav" );
+    if( gHigh == NULL )
+    {
+        printf( "Failed to load high sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    gMedium = Mix_LoadWAV( "21_sound_effects_and_music/medium.wav" );
+    if( gMedium == NULL )
+    {
+        printf( "Failed to load medium sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
+        success = false;
+    }
+
+    gLow = Mix_LoadWAV( "21_sound_effects_and_music/low.wav" );
+    if( gLow == NULL )
+    {
+        printf( "Failed to load low sound effect! SDL_mixer Error: %s\n", Mix_GetError() );
         success = false;
     }
 
@@ -335,12 +359,21 @@ bool loadMedia()
 void close()
 {
     //Free loaded image
-    gUpTexture.free();
-    gDownTexture.free();
-    gLeftTexture.free();
-    gRightTexture.free();
-    gPressTexture.free();
-    gBGTexture.free();
+    gPromptTexture.free();
+
+    //Free the music
+    Mix_FreeMusic( gMusic );
+    gMusic = NULL;
+    
+    //Free the sound effects
+    Mix_FreeChunk( gScratch );
+    Mix_FreeChunk( gHigh );
+    Mix_FreeChunk( gMedium );
+    Mix_FreeChunk( gLow );
+    gScratch = NULL;
+    gHigh = NULL;
+    gMedium = NULL;
+    gLow = NULL;
     
     //Destroy window
     SDL_DestroyRenderer( gRenderer );
@@ -350,6 +383,7 @@ void close()
 
     //Quit SDL subsystems
     //Clean up all dynamically loaded library handles, freeing memory
+    Mix_Quit();
     IMG_Quit();
     SDL_Quit();
 }
@@ -391,42 +425,73 @@ int main( int argc, char* args[] )
                     {
                         quit = true;
                     }
-                }
+                    //Handle key press
+                    else if( e.type == SDL_KEYDOWN )
+                    {
+                        switch( e.key.keysym.sym )
+                        {
+                            //Play high sound effect
+                            case SDLK_1:
+                            Mix_PlayChannel( -1, gHigh, 0 );
+                            // Channel to play on, sets -1 for the first free unreserved channel (what does this mean?)
+                            break;
+                            
+                            //Play medium sound effect
+                            case SDLK_2:
+                            Mix_PlayChannel( -1, gMedium, 0 );
+                            break;
+                            
+                            //Play low sound effect
+                            case SDLK_3:
+                            Mix_PlayChannel( -1, gLow, 0 );
+                            break;
+                            
+                            //Play scratch sound effect
+                            case SDLK_4:
+                            Mix_PlayChannel( -1, gScratch, 0 );
+                            break;
 
-                //Set texture based on current keystate
-                const Uint8* currentKeyStates = SDL_GetKeyboardState( NULL );
-                if ( currentKeyStates[ SDL_SCANCODE_UP ] && currentKeyStates[ SDL_SCANCODE_DOWN ] )
-                {
-                    currentTexture = &gBGTexture;
+                            case SDLK_9:
+                            //If there is no music playing
+                            //Zero if the music is not playing, or 1 if it is playing.
+                            if( Mix_PlayingMusic() == 0 )
+                            {
+                                //Play the music forever
+                                Mix_PlayMusic( gMusic, -1 );
+                            }
+                            //If music is being played
+                            else
+                            {
+                                //If the music is paused
+                                //Zero if music is not paused. 1 if it is paused.
+                                if( Mix_PausedMusic() == 1 )
+                                {
+                                    //Resume the music
+                                    Mix_ResumeMusic();
+                                }
+                                //If the music is playing
+                                else
+                                {
+                                    //Pause the music
+                                    Mix_PauseMusic();
+                                }
+                            }
+                            break;
+                            
+                            case SDLK_0:
+                            //Stop the music
+                            Mix_HaltMusic();
+                            break;
+                        }
+                    }
                 }
-                else if( currentKeyStates[ SDL_SCANCODE_UP ] )
-                {
-                    currentTexture = &gUpTexture;
-                }
-                else if( currentKeyStates[ SDL_SCANCODE_DOWN ] )
-                {
-                    currentTexture = &gDownTexture;
-                }
-                else if( currentKeyStates[ SDL_SCANCODE_LEFT ] )
-                {
-                    currentTexture = &gLeftTexture;
-                }
-                else if( currentKeyStates[ SDL_SCANCODE_RIGHT ] )
-                {
-                    currentTexture = &gRightTexture;
-                }
-                else
-                {
-                    currentTexture = &gPressTexture;
-                }
-
+                
                 //Clear screen
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
                 SDL_RenderClear( gRenderer );
 
-                //Render current texture
-                // currentTexture->render( 0, 0 );
-                ( *currentTexture ).render( 0, 0 );
+                //Render prompt texture
+                gPromptTexture.render( 0, 0 );
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
