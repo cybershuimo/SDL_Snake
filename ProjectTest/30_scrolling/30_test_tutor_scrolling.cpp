@@ -1,4 +1,4 @@
-//30_scrolling, test walking on the map
+//30_scrolling
 //navigate through levels of any size by rendering everything relative to a camera.
 
 //Using SDL, SDL_image, standard IO, and strings
@@ -28,7 +28,7 @@ class Dot
         static const int DOT_HEIGHT = 20;
 
         //Maximum axis velocity of the dot, speed 1 to move the camera
-        static const int DOT_VEL = 1;
+        static const int DOT_VEL = 10;
 
         //Initializes the variables
         Dot();
@@ -88,7 +88,7 @@ class LTexture
 
         //Renders texture at given point, and whether it is a clip
         void render( int x, int y, SDL_Rect* clip = NULL, 
-            double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+        	double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
 
         //Gets image dimensions
         int getWidth();
@@ -129,8 +129,8 @@ LTexture gBackgroundTexture;
 Dot::Dot()
 {
     //Initialize the offsets
-    mPosX = ( LEVEL_WIDTH - DOT_WIDTH ) / 2;
-    mPosY = ( LEVEL_HEIGHT - DOT_HEIGHT ) / 2;
+    mPosX = 0;
+    mPosY = 0;
 
     //Initialize the velocity
     mVelX = 0;
@@ -306,10 +306,10 @@ void LTexture::free()
     //Free texture if it exists
     if ( mTexture != NULL )
     {
-        SDL_DestroyTexture( mTexture );
-        mTexture = NULL;
-        mWidth = 0;
-        mHeight = 0;
+    	SDL_DestroyTexture( mTexture );
+	    mTexture = NULL;
+	    mWidth = 0;
+	    mHeight = 0;
     }
 }
 
@@ -334,23 +334,23 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
 //Set color modulation
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
 {
-    SDL_SetTextureColorMod( mTexture, red, green, blue );
-    //srcC = srcC * (color / 255)
-    //return -1 if color modulation is not supported.
+	SDL_SetTextureColorMod( mTexture, red, green, blue );
+	//srcC = srcC * (color / 255)
+	//return -1 if color modulation is not supported.
 }
 
 //Set alpha modulation
 void LTexture::setAlpha( Uint8 alpha )
 {
-    SDL_SetTextureAlphaMod( mTexture, alpha );
-    //srcA = srcA * (alpha / 255)
-    //return -1 if alpha modulation is not supported.
+	SDL_SetTextureAlphaMod( mTexture, alpha );
+	//srcA = srcA * (alpha / 255)
+	//return -1 if alpha modulation is not supported.
 }
 
 //Set blending, e.g.alpha blending
 void LTexture::setBlendMode( SDL_BlendMode blending )
 {
-    SDL_SetTextureBlendMode( mTexture, blending );
+	SDL_SetTextureBlendMode( mTexture, blending );
 }
 
 
@@ -380,7 +380,7 @@ bool init()
     else
     {
         //Create window
-        gWindow = SDL_CreateWindow( "SDL Test_30_test_walking_on_map", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "SDL Test_30_scrolling", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -427,13 +427,13 @@ bool loadMedia()
     //Loading success flag
     bool success = true;
 
-    if( !gBackgroundTexture.loadFromFile( "30_scrolling/dq11-map.jpg" ) )
+    if( !gBackgroundTexture.loadFromFile( "30_scrolling/bg.png" ) )
     {
         printf( "Failed to load background texture!\n" );
         success = false;
     }
 
-    if( !gDotTexture.loadFromFile( "27_collision_detection/dot.bmp" ) )
+    if( !gDotTexture.loadFromFile( "30_scrolling/dot.bmp" ) )
     {
         printf( "Failed to load dot texture!\n" );
         success = false;
@@ -472,21 +472,21 @@ void close()
 
 int main( int argc, char* args[] )
 {
-    //Start up SDL and create window
-    if( !init() )
-    {
-        printf( "Failed to initialize!\n" );
-    }
-    else
-    {
-        //Load media
-        if( !loadMedia() )
-        {
-            printf( "Failed to load media!\n" );
-        }
-        else
-        {   
-            //Main loop flag
+	//Start up SDL and create window
+	if( !init() )
+	{
+		printf( "Failed to initialize!\n" );
+	}
+	else
+	{
+		//Load media
+		if( !loadMedia() )
+		{
+			printf( "Failed to load media!\n" );
+		}
+		else
+		{	
+			//Main loop flag
             bool quit = false;
 
             //Event handler
@@ -498,8 +498,8 @@ int main( int argc, char* args[] )
             //The camera area
             SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 
-            //While application is running
-            while( !quit )
+			//While application is running
+			while( !quit )
             {
                 //Handle events on queue
                 while( SDL_PollEvent( &e ) != 0 )
@@ -517,7 +517,7 @@ int main( int argc, char* args[] )
                 //Move the dot
                 dot.move();
 
-                //Center the camera over the dot, thus the dot is in the center most time
+                //Center the camera over the dot
                 camera.x = ( dot.getPosX() + Dot::DOT_WIDTH / 2 ) - SCREEN_WIDTH / 2;
                 camera.y = ( dot.getPosY() + Dot::DOT_HEIGHT / 2 ) - SCREEN_HEIGHT / 2;
 
@@ -550,11 +550,11 @@ int main( int argc, char* args[] )
                 //Update screen
                 SDL_RenderPresent( gRenderer );
             }
-        }
-    }
+		}
+	}
 
-    //Free resources and close SDL
-    close();
+	//Free resources and close SDL
+	close();
 
-    return 0;
+	return 0;
 }
