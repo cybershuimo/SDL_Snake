@@ -1,8 +1,9 @@
-//31_scrolling_background, gives the illusion of an infinite level
-//cycle a background that goes on forever?
+//33_file_reading_and_writing, save and load data from a binary file
 
 //Using SDL, SDL_image, standard IO, and strings
 #include <iostream>
+// #include <windows.h>    // for Sleep()
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -12,11 +13,17 @@
 #include <vector>
 
 //check memory leak
+#define _CRTDBG_MAP_ALLOC  
+#include <stdlib.h>  
+#include <crtdbg.h>
+
 #include <vld.h>
+
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+const int TOTAL_DATA = 10;
 
 //The dot that will move around on the screen
 class Dot
@@ -125,7 +132,10 @@ TTF_Font *gFont = NULL;
 // //Texture to render
 // LTexture gDotTexture;
 LTexture gPromptTextTexture;
-LTexture gInputTextTexture;
+LTexture gDataTextures[ TOTAL_DATA ];
+
+//Data points to save and load. For the demo length of 10
+Sint32 gData[ TOTAL_DATA ];
 
 
 // Class Dot, a subclass of LTexture?
@@ -383,7 +393,7 @@ bool init()
     else
     {
         //Create window
-        gWindow = SDL_CreateWindow( "SDL Test_32", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "SDL Test_33_file_reading_and_writing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -441,11 +451,67 @@ bool loadMedia()
     {
         //Load prompt text
         SDL_Color textColor = { 0, 0, 0, 0xFF };
-        if( !gPromptTextTexture.loadFromRenderedText( "Enter Text: ", textColor ) )
+        if( !gPromptTextTexture.loadFromRenderedText( "Enter Data: ", textColor ) )
         {
             printf( "Failed to load background texture!\n" );
             success = false;
         }
+    }
+
+    //Open file for reading in binary
+    SDL_RWops* file = SDL_RWFromFile( "33_file_reading_and_writing/nums.bin", "r+b" );
+
+    //File does not exist
+    if( file == NULL )
+    {
+        printf( "Warning: Unable to open file! SDL Error: %s\n", SDL_GetError() );
+        
+        //Create file for writing
+        file = SDL_RWFromFile( "33_file_reading_and_writing/nums.bin", "w+b" );
+        if( file != NULL )
+        {
+            printf( "New file created!\n" );
+
+            //Initialize data
+            for( int i = 0; i < TOTAL_DATA; ++i )
+            {
+                gData[ i ] = 0;    
+                SDL_RWwrite( file, &gData[ i ], sizeof(Sint32), 1 );
+            }
+            
+            //Close file handler
+            SDL_RWclose( file );
+        }
+        else
+        {
+            printf( "Error: Unable to create file! SDL Error: %s\n", SDL_GetError() );
+            success = false;
+        }
+    }
+    //File exists
+    else
+    {
+        //Load data
+        printf( "Reading file...!\n" );
+        for( int i = 0; i < TOTAL_DATA; ++i )
+        {
+            SDL_RWread( file, &gData[ i ], sizeof(Sint32), 1 );
+        }
+
+        //Close file handler
+        SDL_RWclose( file );
+    }
+
+
+    //Text rendering color
+    SDL_Color textColor = { 0, 0, 0, 0xFF };
+    SDL_Color highlightColor = { 0xFF, 0, 0, 0xFF };
+
+    //Initialize data textures, 0th data highlighted, others default color
+    gDataTextures[ 0 ].loadFromRenderedText( std::to_string( ( long long )gData[ 0 ] ), highlightColor );
+    for( int i = 1; i < TOTAL_DATA; ++i )
+    {
+        gDataTextures[ i ].loadFromRenderedText( std::to_string( ( long long )gData[ i ] ), textColor );
     }
 
     return success;
@@ -453,10 +519,32 @@ bool loadMedia()
 
 void close()
 {
+    //Open save file for writing
+    SDL_RWops* file = SDL_RWFromFile( "33_file_reading_and_writing/nums.bin", "w+b" );
+    if( file != NULL )
+    {
+        //Save data
+        for( int i = 0; i < TOTAL_DATA; ++i )
+        {
+            SDL_RWwrite( file, &gData[ i ], sizeof(Sint32), 1 );
+        }
+
+        //Close file handler
+        SDL_RWclose( file );
+    }
+    else
+    {
+        printf( "Error: Unable to save file! %s\n", SDL_GetError() );
+    }
+
     // //Free loaded image
     // gDotTexture.free();
     gPromptTextTexture.free();
-    gInputTextTexture.free();
+    for (int i = 0; i < TOTAL_DATA; ++i)
+    {
+    	gDataTextures[ i ].free();
+    }
+    
 
     //Free global font
     TTF_CloseFont( gFont );
@@ -476,6 +564,9 @@ void close()
 
     printf( "Unload resource successfully. Close the window as you like.\n" );
     std::cin.get(); 
+
+    // // Delay 5000ms
+    // Sleep( 5000 );
 }
 
 
@@ -502,15 +593,12 @@ int main( int argc, char* args[] )
             //Event handler
             SDL_Event e;
 
-            //Set text color as black
+            //Text rendering color
             SDL_Color textColor = { 0, 0, 0, 0xFF };
+            SDL_Color highlightColor = { 0xFF, 0, 0, 0xFF };
 
-            //The current input text (default content)
-            std::string inputText = "Some Text";
-            gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
-
-            //Enable text input, use SDL_StopTextInput() when finished
-            SDL_StartTextInput();
+            //Current input point
+            int currentData = 0;
 
             //While application is running
             while( !quit )
@@ -526,60 +614,53 @@ int main( int argc, char* args[] )
                     {
                         quit = true;
                     }
-                    //Special key input
+                    //Handle keyboard inputs, change num chosen, or change num value
                     else if( e.type == SDL_KEYDOWN )
                     {
-                        //Handle backspace
-                        if( e.key.keysym.sym == SDLK_BACKSPACE && inputText.length() > 0 )
+                        switch( e.key.keysym.sym )
                         {
-                            //lop off character
-                            inputText.pop_back();
-                            renderText = true;
-                        }
-                        //Handle copy
-                        else if( e.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL )
-                        {
-                            SDL_SetClipboardText( inputText.c_str() );
-                        }
-                        //Handle paste, how to free clipboard after using it?
-                        else if( e.key.keysym.sym == SDLK_v && SDL_GetModState() & KMOD_CTRL )
-                        {
-                            inputText = SDL_GetClipboardText();
-                            renderText = true;
-                        }
-                    }
-                    //With text input enabled, key presses will also generate SDL_TextInputEvents which simplifies things like shift key and caps lock.
-                    //Special text input event
-                    else if( e.type == SDL_TEXTINPUT )
-                    {
-                        //Not copy or pasting
-                        if( !( ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' ) && ( e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) && SDL_GetModState() & KMOD_CTRL ) )
-                        {
-                            //Append character
-                            inputText += e.text.text;
-                            renderText = true;
+                            //Previous data entry
+                            case SDLK_UP:
+                            //Rerender previous entry input point
+                            gDataTextures[ currentData ].loadFromRenderedText( std::to_string( ( long long )gData[ currentData ] ), textColor );
+                            --currentData;
+                            if( currentData < 0 )
+                            {
+                                currentData = TOTAL_DATA - 1;
+                            }
+                            //Rerender current entry input point
+                            gDataTextures[ currentData ].loadFromRenderedText( std::to_string( ( long long )gData[ currentData ] ), highlightColor );
+                            break;
+                            
+                            //Next data entry
+                            case SDLK_DOWN:
+                            //Rerender previous entry input point
+                            gDataTextures[ currentData ].loadFromRenderedText( std::to_string( ( long long )gData[ currentData ] ), textColor );
+                            ++currentData;
+                            if( currentData == TOTAL_DATA )
+                            {
+                                currentData = 0;
+                            }
+                            //Rerender current entry input point
+                            gDataTextures[ currentData ].loadFromRenderedText( std::to_string( ( long long )gData[ currentData ] ), highlightColor );
+                            break;
+
+                            //Decrement input point
+                            case SDLK_LEFT:
+                            --gData[ currentData ];
+                            gDataTextures[ currentData ].loadFromRenderedText( std::to_string( ( long long )gData[ currentData ] ), highlightColor );
+                            break;
+                            
+                            //Increment input point
+                            case SDLK_RIGHT:
+                            ++gData[ currentData ];
+                            gDataTextures[ currentData ].loadFromRenderedText( std::to_string( ( long long )gData[ currentData ] ), highlightColor );
+                            break;
                         }
                     }
 
                 }
                 
-
-                //Refresh text texture if needed
-                if( renderText )
-                {
-                    //Text is not empty
-                    if( inputText != "" )
-                    {
-                        //Render new text
-                        gInputTextTexture.loadFromRenderedText( inputText.c_str(), textColor );
-                    }
-                    //Text is empty
-                    else
-                    {
-                        //Render space texture
-                        gInputTextTexture.loadFromRenderedText( " ", textColor );
-                    }
-                }
 
                 //Clear screen
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
@@ -587,7 +668,11 @@ int main( int argc, char* args[] )
 
                 //Render text textures
                 gPromptTextTexture.render( ( SCREEN_WIDTH - gPromptTextTexture.getWidth() ) / 2, 0 );
-                gInputTextTexture.render( ( SCREEN_WIDTH - gInputTextTexture.getWidth() ) / 2, gPromptTextTexture.getHeight() );
+                for (int i = 0; i < TOTAL_DATA; ++i)
+                {
+                	gDataTextures[ i ].render( ( SCREEN_WIDTH - gDataTextures[ i ].getWidth() ) / 2, 
+                		gPromptTextTexture.getHeight() + gDataTextures[ 0 ].getHeight() * i );
+                }
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
@@ -600,9 +685,6 @@ int main( int argc, char* args[] )
     
     //Free resources and close SDL
     close();
-
-    //Check memory leak (?)
-    _CrtDumpMemoryLeaks();
 
     return 0;
 }
