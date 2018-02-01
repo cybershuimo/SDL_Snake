@@ -11,7 +11,7 @@
 //#include <vector>
 
 //check memory leak
-#include <vld.h>
+//#include <vld.h>
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
@@ -180,7 +180,9 @@ SDL_Renderer* gRenderer = NULL;
 
 //Texture to render
 LTexture gDotTexture;
-LTexture gTileClips[ 3 ];
+LTexture gTileTexture;
+
+SDL_Rect gTileClips[ TOTAL_TILES ];
 
 
 //Initializes position and type
@@ -508,7 +510,7 @@ bool init()
     else
     {
         //Create window
-        gWindow = SDL_CreateWindow( "SDL Test_30_test_walking_on_map", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+        gWindow = SDL_CreateWindow( "SDL Test_39", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
         if( gWindow == NULL )
         {
             printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -617,7 +619,8 @@ bool setTiles( Tile* tiles[] )
     std::ifstream map( "39_tiling/lazy.map" );
 
     //If the map couldn't be loaded
-    if( map == NULL )
+    //if( map == NULL )
+    if ( !map.is_open() )
     {
         printf( "Unable to load map file!\n" );
         tilesLoaded = false;
@@ -743,13 +746,68 @@ bool setTiles( Tile* tiles[] )
 
 bool touchesWall( SDL_Rect box, Tile* tiles[] )
 {
+    //Go through the tiles
+    for( int i = 0; i < TOTAL_TILES; ++i )
+    {
+        //If the tile is a wall type tile
+        if( ( tiles[ i ]->getType() >= TILE_CENTER ) && ( tiles[ i ]->getType() <= TILE_TOPLEFT ) )
+        {
+            //If the collision box touches the wall tile
+            if( checkCollision( box, tiles[ i ]->getBox() ) )
+            {
+                return true;
+            }
+        }
+    }
 
+    //If no wall tiles were touched
+    return false;
 }
 
 
 bool checkCollision( SDL_Rect a, SDL_Rect b )
 {
-    
+    bool collision = true;
+
+    //The sides of the rectangles
+    int leftA, leftB;
+    int rightA, rightB;
+    int topA, topB;
+    int bottomA, bottomB;
+
+    //Calculate the sides of rect A
+    leftA = a.x;
+    rightA = a.x + a.w;
+    topA = a.y;
+    bottomA = a.y + a.h;
+
+    //Calculate the sides of rect B
+    leftB = b.x;
+    rightB = b.x + b.w;
+    topB = b.y;
+    bottomB = b.y + b.h;
+
+    //do separating axis test
+    if ( rightA <= leftB )
+    {
+        collision = false;
+    }
+    //Y axis value: the more bottom the bigger
+    else if ( topA >= bottomB )
+    {
+        collision = false;
+    }
+    else if ( leftA >= rightB )
+    {
+        collision = false;
+    }
+    else if ( bottomA <= topB )
+    {
+        collision = false;
+    }
+
+    //If none of the sides from A are outside B
+    return collision;
 }
 
 
@@ -762,8 +820,11 @@ int main( int argc, char* args[] )
     }
     else
     {
+        //The level tiles
+        Tile* tileSet[ TOTAL_TILES ];
+
         //Load media
-        if( !loadMedia() )
+        if( !loadMedia( tileSet ) )
         {
             printf( "Failed to load media!\n" );
         }
@@ -778,8 +839,8 @@ int main( int argc, char* args[] )
             //The dot that will be moving around on the screen
             Dot dot;
 
-            // //The camera area
-            // SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+            //The camera area
+            SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 
             //While application is running
             while( !quit )
@@ -798,19 +859,37 @@ int main( int argc, char* args[] )
                 }
 
                 //Move the dot
-                dot.move();
+                dot.move( tileSet );
+                dot.setCamera( camera );
                 
                 //Clear screen
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
                 SDL_RenderClear( gRenderer );
 
+                //Render level
+                for (int i = 0; i < TOTAL_TILES; ++i)
+                {
+                    tileSet[ i ]->render( camera );
+                }
+
                 //Render objects
-                dot.render();
+                dot.render( camera );
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
             }
         }
+
+        //Deallocate tiles
+        for( int i = 0; i < TOTAL_TILES; ++i )
+        {
+             if( tileSet[ i ] != NULL )
+             {
+                delete tileSet[ i ];
+                tileSet[ i ] = NULL;
+             }
+        }
+
     }
 
     //Free resources and close SDL
