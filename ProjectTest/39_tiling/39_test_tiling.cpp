@@ -11,7 +11,7 @@
 //#include <vector>
 
 //check memory leak
-//#include <vld.h>
+#include <vld.h>
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
@@ -230,8 +230,8 @@ SDL_Rect Tile::getBox()
 Dot::Dot()
 {
     //Initialize the offsets
-    mBox.x = ( SCREEN_WIDTH - DOT_WIDTH ) / 2;
-    mBox.y = ( SCREEN_HEIGHT - DOT_HEIGHT ) / 2;
+    mBox.x = 0;
+    mBox.y = 0;
     
     //Set the collision box
     mBox.w = DOT_WIDTH;
@@ -286,7 +286,7 @@ void Dot::move( Tile* tiles[] )
     mBox.x += mVelX;
 
     //If the camera view went too far to the left or right
-    if( ( mBox.x < 0 ) || ( mBox.x + DOT_WIDTH > SCREEN_WIDTH ) || touchesWall( mBox, tiles ) )
+    if( ( mBox.x < 0 ) || ( mBox.x + DOT_WIDTH > LEVEL_WIDTH ) || touchesWall( mBox, tiles ) )
     {
         //Move back
         mBox.x -= mVelX;
@@ -296,7 +296,7 @@ void Dot::move( Tile* tiles[] )
     mBox.y += mVelY;
 
     //If the camera view went too far to the up or down
-    if( ( mBox.y < 0 ) || ( mBox.y + DOT_HEIGHT > SCREEN_HEIGHT ) || touchesWall( mBox, tiles ) )
+    if( ( mBox.y < 0 ) || ( mBox.y + DOT_HEIGHT > LEVEL_HEIGHT ) || touchesWall( mBox, tiles ) )
     {
         //Move back
         mBox.y -= mVelY;
@@ -307,8 +307,8 @@ void Dot::move( Tile* tiles[] )
 
 void Dot::setCamera( SDL_Rect& camera )
 {
-    camera.x = ( mBox.x + Dot::DOT_WIDTH / 2 ) - SCREEN_WIDTH / 2;
-    camera.y = ( mBox.y + Dot::DOT_HEIGHT / 2 ) - SCREEN_HEIGHT / 2;
+    camera.x = ( mBox.x + DOT_WIDTH / 2 ) - SCREEN_WIDTH / 2;
+    camera.y = ( mBox.y + DOT_HEIGHT / 2 ) - SCREEN_HEIGHT / 2;
 
     //Keep the camera in bounds
     if( camera.x < 0 )
