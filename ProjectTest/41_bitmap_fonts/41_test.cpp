@@ -1,3 +1,5 @@
+//41_bitmap_fonts, using a texture as a font using bitmap font techniques
+
 //40_texture_manipulation, by pixel modification we make all the background pixels transparent
 //lock the image before doing pixel modification
 
@@ -29,17 +31,16 @@ class LTexture
 
         //Loads image at specified path
         bool loadFromFile( std::string path );
-
+        
         #ifdef _SDL_TTF_H
         //Creates image from font string
-        //If SDL_ttf is not defined, ignore this piece of code.
         bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
         #endif
 
         //Deallocates texture
         void free();
 
-        //Set color modification of texture
+        //Set color modulation
         void setColor( Uint8 red, Uint8 green, Uint8 blue );
 
         //Set blending
@@ -47,10 +48,9 @@ class LTexture
 
         //Set alpha modulation
         void setAlpha( Uint8 alpha );
-
-        //Renders texture at given point, and whether it is a clip
-        void render( int x, int y, SDL_Rect* clip = NULL, 
-            double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+        
+        //Renders texture at given point
+        void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
 
         //Gets image dimensions
         int getWidth();
@@ -61,7 +61,7 @@ class LTexture
         bool unlockTexture();
         void* getPixels();
         int getPitch();
-
+        Uint32 getPixel32( unsigned int x, unsigned int y );
 
     private:
         //The actual hardware texture
@@ -72,6 +72,30 @@ class LTexture
         //Image dimensions
         int mWidth;
         int mHeight;
+};
+
+//Our bitmap font
+class LBitmapFont
+{
+    public:
+        //The default constructor
+        LBitmapFont();
+
+        //Generates the font
+        bool buildFont( LTexture *bitmap );
+
+        //Shows the text
+        void renderText( int x, int y, std::string text );
+
+    private:
+        //The font texture
+        LTexture* mBitmap;
+
+        //The individual characters in the surface
+        SDL_Rect mChars[ 256 ];
+
+        //Spacing Variables
+        int mNewLine, mSpace;
 };
 
 //Starts up SDL and creates window
@@ -138,6 +162,8 @@ bool LTexture::loadFromFile( std::string path )
         }
         else
         {
+            
+        	setBlendMode()
             //Create blank streamable/lockable texture
             newTexture = SDL_CreateTexture( gRenderer, SDL_GetWindowPixelFormat( gWindow ), 
             	SDL_TEXTUREACCESS_STREAMING, formattedSurface->w, formattedSurface->h );
@@ -147,19 +173,39 @@ bool LTexture::loadFromFile( std::string path )
             }
             else
             {
-            	//Lock texture for manipulation
-                SDL_LockTexture( newTexture, NULL, &mPixels, &mPitch );
+            	//Enable blending on texture
+                SDL_SetTextureBlendMode( newTexture, SDL_BLENDMODE_BLEND );
 
-                //Copy loaded/formatted surface pixels, to mPixels
+                //Lock texture for manipulation
+                SDL_LockTexture( newTexture, &formattedSurface->clip_rect, &mPixels, &mPitch );
+
+                //Copy loaded/formatted surface pixels
                 memcpy( mPixels, formattedSurface->pixels, formattedSurface->pitch * formattedSurface->h );
-
-                //Unlock texture to update
-                SDL_UnlockTexture( newTexture );
-                mPixels = NULL;
 
                 //Get image dimensions
                 mWidth = formattedSurface->w;
                 mHeight = formattedSurface->h;
+
+                //Get pixel data in editable format
+                Uint32* pixels = (Uint32*)mPixels;
+                int pixelCount = ( mPitch / 4 ) * mHeight;
+
+                //Map colors                
+                Uint32 colorKey = SDL_MapRGB( formattedSurface->format, 0, 0xFF, 0xFF );
+                Uint32 transparent = SDL_MapRGBA( formattedSurface->format, 0x00, 0xFF, 0xFF, 0x00 );
+
+                //Color key pixels
+                for( int i = 0; i < pixelCount; ++i )
+                {
+                    if( pixels[ i ] == colorKey )
+                    {
+                        pixels[ i ] = transparent;
+                    }
+                }
+
+                //Unlock texture to update
+                SDL_UnlockTexture( newTexture );
+                mPixels = NULL;
             }
 
             //Get rid of old formatted surface
@@ -330,6 +376,32 @@ int LTexture::getPitch()
 {
     return mPitch;
 }
+
+// calculate pixel offsets like Y Offset * Pitch + X Offset
+Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
+{
+	//Convert the pixels to 32 bit
+    Uint32 *pixels = (Uint32*)mPixels;
+
+    //Get the pixel requested
+    return pixels[ ( y * ( mPitch / 4 ) ) + x ];
+}
+
+
+// LBitmapFont class member functions
+LBitmapFont::LBitmapFont()
+{
+	//Initialize variables
+    mBitmap = NULL;
+    mNewLine = 0;
+    mSpace = 0;
+}
+
+bool LBitmapFont::buildFont( LTexture *bitmap )
+{
+
+}
+
 
 bool init()
 {
