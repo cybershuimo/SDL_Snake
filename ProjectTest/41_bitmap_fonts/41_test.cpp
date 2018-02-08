@@ -496,15 +496,11 @@ bool LBitmapFont::buildFont( LTexture *bitmap )
                         //If a non colorkey pixel is found
                         if( bitmap->getPixel32( pX, pY ) != bgColor )
                         {
-                            //Set the x offset
-                            //mChars[ currentChar ].y = pY;
-
-                            //If new top is found
+							//If new top is found
                             if( pRow < top )
                             {
                                 top = pRow;
                             }
-
 
                             //Break the loops
                             pCol = cellW;
@@ -513,30 +509,29 @@ bool LBitmapFont::buildFont( LTexture *bitmap )
                     }
                 }
 
-                //Find Bottom
-                //Go through pixel columns
-                for( int pRow = cellH; pRow > 0; --pRow )
+                //Find Bottom of A
+                if( currentChar == 'A' )
                 {
                     //Go through pixel rows
-                    for( int pCol = 0; pCol < cellW; ++pCol )
+                    for( int pRow = cellH - 1; pRow >= 0; --pRow )
                     {
-                        //Get the pixel offsets
-                        int pX = ( cellW * cols ) + pCol;
-                        int pY = ( cellH * rows ) + pRow;
-
-                        //If a non colorkey pixel is found
-                        if( bitmap->getPixel32( pX, pY ) != bgColor )
+                        //Go through pixel columns
+                        for( int pCol = 0; pCol < cellW; ++pCol )
                         {
-                            //Set the x offset
-                            //mChars[ currentChar ].h = pY - mChars[ currentChar ].y + 1;
-                        	if ( pRow + 1 < baseA )
-                        	{
-                        		baseA = pRow + 1;
-                        	}
+                            //Get the pixel offsets
+                            int pX = ( cellW * cols ) + pCol;
+                            int pY = ( cellH * rows ) + pRow;
 
-                            //Break the loops
-                            pCol = cellW;
-                            pRow = 0;
+                            //If a non colorkey pixel is found
+                            if( bitmap->getPixel32( pX, pY ) != bgColor )
+                            {
+                                //Bottom of a is found
+                                baseA = pRow;
+
+                                //Break the loops
+                                pCol = cellW;
+                                pRow = -1;
+                            }
                         }
                     }
                 }
@@ -734,7 +729,7 @@ int main( int argc, char* args[] )
             SDL_Color textColor = { 0, 0, 0, 0xFF };
 
             //The current input text (default content)
-            std::string inputText = "Input text: ";
+            std::string inputText = "Input text: \n";
 
             //Enable text input, use SDL_StopTextInput() when finished
             SDL_StartTextInput();
@@ -772,6 +767,11 @@ int main( int argc, char* args[] )
                             //renderText = true;
                         }
                     }
+                    // else if( e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN )
+                    // {
+                    // 	inputText += '\n';
+                    // 	printf("There is an Enter pressed.\n");
+                    // }
                     //With text input enabled, key presses will also generate SDL_TextInputEvents which simplifies things like shift key and caps lock.
                     //Special text input event
                     else if( e.type == SDL_TEXTINPUT )
@@ -790,11 +790,15 @@ int main( int argc, char* args[] )
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
                 SDL_RenderClear( gRenderer );
 
-                gBitmapFont.renderText( 10, 10, inputText );
+                //gBitmapFont.renderText( 10, 10, inputText );
+				gBitmapFont.renderText( 0, 0, "Bitmap Font:\nABDCEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789" );
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
             }
+
+            //Disable text input
+    		SDL_StopTextInput();
         }
     }
     

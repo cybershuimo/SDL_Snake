@@ -1,4 +1,4 @@
-//42_texture_streaming. Using texture stream we can render pixels from any source
+//43_render_to_texture, render our scene full of geometry to a texture, then render the target texture to the screen at a rotated angle.
 
 //Using SDL, SDL_image, standard IO, and strings
 #include <iostream>
@@ -35,7 +35,7 @@ class LTexture
         #endif
 
         //Creates blank texture -- NEW FUNCTIONALITY HERE
-        bool createBlank( int width, int height );
+        bool createBlank( int width, int height, SDL_TextureAccess access = SDL_TEXTUREACCESS_STREAMING );
 
         //Deallocates texture
         void free();
@@ -51,6 +51,9 @@ class LTexture
         
         //Renders texture at given point
         void render( int x, int y, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
+
+        //Set self as render target
+        void setAsRenderTarget();
 
         //Gets image dimensions
         int getWidth();
@@ -76,30 +79,6 @@ class LTexture
 };
 
 
-//A test animation stream
-class DataStream
-{
-    public:
-        //Initializes internals
-        DataStream();
-
-        //Loads initial data
-        bool loadMedia();
-
-        //Deallocator
-        void free();
-
-        //Gets current frame data
-        void* getBuffer();
-
-    private:
-        //Internal data
-        SDL_Surface* mImages[ 4 ];
-        int mCurrentImage;
-        int mDelayFrames;	//what for?
-};
-
-
 //Starts up SDL and creates window
 bool init();
 
@@ -117,10 +96,8 @@ SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
 
 //Texture to render
-LTexture gStreamingTexture;
+LTexture gTargetTexture;
 
-//Data stream (source)
-DataStream gDataStream;
 
 // Initializes
 LTexture::LTexture()
@@ -261,10 +238,10 @@ bool LTexture::loadFromRenderedText( std::string textureText, SDL_Color textColo
 #endif
 
 //Creates blank texture
-bool LTexture::createBlank( int width, int height )
+bool LTexture::createBlank( int width, int height, SDL_TextureAccess access )
 {
 	//Create uninitialized texture
-    mTexture = SDL_CreateTexture( gRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height );
+    mTexture = SDL_CreateTexture( gRenderer, SDL_PIXELFORMAT_RGBA8888, access, width, height );
     if( mTexture == NULL )
     {
         printf( "Unable to create blank texture! SDL Error: %s\n", SDL_GetError() );
@@ -307,6 +284,12 @@ void LTexture::render( int x, int y, SDL_Rect* clip, double angle, SDL_Point* ce
     //SDL_RenderCopy( renderer, texture, &srcrect, &dstrect );
 }
 
+//Set self as render target, or other target?
+void LTexture::setAsRenderTarget()
+{
+    //Make self render target
+    SDL_SetRenderTarget( gRenderer, mTexture );
+}
 
 //Set color modulation
 void LTexture::setColor( Uint8 red, Uint8 green, Uint8 blue )
@@ -417,73 +400,6 @@ Uint32 LTexture::getPixel32( unsigned int x, unsigned int y )
 }
 
 
-// DataStream class member functions
-DataStream::DataStream()
-{
-	for (int i = 0; i < 4; ++i)
-	{
-		mImages[ i ] = NULL;
-	}
-	
-    int mCurrentImage = 0;
-    int mDelayFrames = 0;	
-}
-
-bool DataStream::loadMedia()
-{
-	//Loading success flag
-	bool success = true;
-
-	for( int i = 0; i < 4; ++i )
-	{
-		char path[ 64 ] = "";
-		sprintf_s( path, "42_texture_streaming/foo_walk_%d.png", i );
-
-		SDL_Surface* loadedSurface = IMG_Load( path );
-		if( loadedSurface == NULL )
-		{
-			printf( "Unable to load %s! SDL_image error: %s\n", path, IMG_GetError() );
-			success = false;
-		}
-		else
-		{
-			mImages[ i ] = SDL_ConvertSurfaceFormat( loadedSurface, SDL_PIXELFORMAT_RGBA8888, NULL );
-		}
-
-		SDL_FreeSurface( loadedSurface );
-	}
-	
-	return success;
-}
-
-void DataStream::free()
-{
-	for (int i = 0; i < 4; ++i)
-	{
-		if ( mImages[ i ] != NULL )
-		{
-			SDL_FreeSurface( mImages[ i ] );
-			mImages[ i ] = NULL;
-		}	
-	}
-}
-
-//get pixel data of current image frame
-void* DataStream::getBuffer()
-{
-	// Set current frame, play slower than current image count
-    int currentFrame = mCurrentImage / 6;
-    ++mCurrentImage;
-
-    if ( mCurrentImage >= 24 )
-	{
-		mCurrentImage = 0;
-	}
-
-	return mImages[ currentFrame ]->pixels;
-}
-
-
 bool init()
 {
     //Initialization flag
@@ -547,19 +463,12 @@ bool loadMedia()
     //Loading success flag
     bool success = true;
 
-    //Load blank texture
-	if( !gStreamingTexture.createBlank( 64, 205 ) )
+    //Load blank texture, self as target
+	if( !gTargetTexture.createBlank( SCREEN_WIDTH, SCREEN_HEIGHT, SDL_TEXTUREACCESS_TARGET ) )
 	{
-		printf( "Failed to create streaming texture!\n" );
+		printf( "Failed to create target texture!\n" );
 		success = false;
 	}
-
-    //Load dot texture
-    if( !gDataStream.loadMedia() )
-    {
-        printf( "Failed to load stream source!\n" );
-        success = false;
-    }
 
     return success;
 }
@@ -567,8 +476,7 @@ bool loadMedia()
 void close()
 {
     //Free loaded images
-    gStreamingTexture.free();
-    gDataStream.free();
+    gTargetTexture.free();
 
     //Destroy window
     SDL_DestroyRenderer( gRenderer );
@@ -608,6 +516,10 @@ int main( int argc, char* args[] )
             //Event handler
             SDL_Event e;
 
+            //Rotation variables
+            double angle = 0;
+            SDL_Point screenCenter = { SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+
             //While application is running
             while( !quit )
             {
@@ -621,17 +533,34 @@ int main( int argc, char* args[] )
                     }
                 }
                 
+                //rotate
+                angle += 2;
+                if( angle > 360 )
+                {
+                    angle -= 360;
+                }
+
+                //Set self as render target
+                gTargetTexture.setAsRenderTarget();
+
                 //Clear screen
                 SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
                 SDL_RenderClear( gRenderer );
 
-                //Copy frame from buffer
-                gStreamingTexture.lockTexture();
-                gStreamingTexture.copyPixels( gDataStream.getBuffer() );
-                gStreamingTexture.unlockTexture();
+                //Render red filled quad
+                SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+                SDL_SetRenderDrawColor( gRenderer, 0xFF, 0x00, 0x00, 0xFF );        
+                SDL_RenderFillRect( gRenderer, &fillRect );
 
-                //Render frame
-                gStreamingTexture.render( ( SCREEN_WIDTH - gStreamingTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gStreamingTexture.getHeight() ) / 2 );
+                //Draw blue horizontal line
+                SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0xFF, 0xFF );        
+                SDL_RenderDrawLine( gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2 ); // (renderer, x1, y1, x2, y2)
+
+                //Reset render target
+                SDL_SetRenderTarget( gRenderer, NULL );
+
+                //Show rendered to texture
+                gTargetTexture.render( 0, 0, NULL, angle, &screenCenter );
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
