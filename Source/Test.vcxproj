@@ -18,9 +18,6 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="39_tiling\39_test_tiling.cpp" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{F903B330-2C18-407E-A2CB-E3241480456C}</ProjectGuid>
@@ -72,8 +69,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_mixer-2.0.2\include;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_ttf-2.0.14\include;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\ucrt;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2-2.0.7\include;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_image-2.0.2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_mixer-2.0.2\lib\x86;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_ttf-2.0.14\lib\x86;C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.15063.0\ucrt\x86;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2-2.0.7\lib\x86;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_image-2.0.2\lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_mixer-2.0.2\include;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_ttf-2.0.14\include;C:\Program Files %28x86%29\Windows Kits\10\Include\10.0.15063.0\ucrt;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2-2.0.7\include;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_image-2.0.2\include;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_mixer-2.0.2\lib\x86;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_ttf-2.0.14\lib\x86;C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.15063.0\ucrt\x86;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2-2.0.7\lib\x86;C:\Users\S F\Documents\Projects\SDL\vs_dev_lib\SDL2_image-2.0.2\lib\x86;C:\Program Files (x86)\Visual Leak Detector\lib\Win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
