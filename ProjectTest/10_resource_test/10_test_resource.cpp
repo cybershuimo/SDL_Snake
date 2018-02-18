@@ -30,8 +30,8 @@ class LTexture
         //Deallocates texture
         void free();
 
-        //Renders texture at given point, and whether it is a clip
-        void render( int x, int y, SDL_Rect* clip = NULL );
+        //Renders texture at given destination, and whether it is a clip
+        void render( SDL_Rect* clip, SDL_Rect* dstrect = NULL );
 
         //Gets image dimensions
         int getWidth();
@@ -56,6 +56,7 @@ SDL_Renderer* gRenderer = NULL;
 //Walking animation, clip rendering
 const int WALKING_ANIMATION_FRAMES = 4;
 SDL_Rect gSpriteClips[ WALKING_ANIMATION_FRAMES ];
+SDL_Rect dstClip = {0, 0, NULL, NULL};
 
 //Scene textures (two image to render)
 LTexture gFooTexture;
@@ -131,19 +132,22 @@ void LTexture::free()
 }
 
 //Renders texture at given point
-void LTexture::render( int x, int y, SDL_Rect* clip )
+void LTexture::render( SDL_Rect* clip, SDL_Rect* dstrect )
 {
-    //Set destination rectangle
-    SDL_Rect renderQuad = { x, y, mWidth, mHeight };
+    // //Set destination rectangle
+    // if ( dstrect != NULL )
+    // {
+    //     dstrect = { x, y, mWidth, mHeight };
+    // }
 
-    //Set renderQuad width and height same as source rect
-    if ( clip != NULL )
-    {
-        renderQuad.w = clip->w;
-        renderQuad.h = clip->h;
-    }
+    // //Set renderQuad width and height same as source rect
+    // if ( ( clip != NULL ) && ( dstrect != NULL ) )
+    // {
+    //     dstrect.w = clip->w;
+    //     dstrect.h = clip->h;
+    // }
     
-    SDL_RenderCopy( gRenderer, mTexture, clip, &renderQuad );
+    SDL_RenderCopy( gRenderer, mTexture, clip, dstrect );
     //SDL_RenderCopy( renderer, texture, &srcrect, &dstrect );
 }
 
@@ -216,7 +220,7 @@ bool loadMedia()
     bool success = true;
 
     //Load background texture
-    if( !gBackgroundTexture.loadFromFile( "10_move_test/background.png" ) )
+    if( !gBackgroundTexture.loadFromFile( "10_resource_test/Snow Forest.png" ) )
     {
         printf( "Failed to load background texture!\n" );
         success = false;
@@ -348,7 +352,7 @@ int main( int argc, char* args[] )
 				SDL_RenderClear( gRenderer );
                 
                 //Render background texture to screen
-                gBackgroundTexture.render( 0, 0 );
+                gBackgroundTexture.render( NULL, NULL );
 
                 //Determine which frame to render, change sprite clip every 6 frames
                 SDL_Rect* currentClip = &gSpriteClips[ frame / 6 ];
@@ -371,8 +375,13 @@ int main( int argc, char* args[] )
                     y = SCREEN_HEIGHT - currentClip->h;
                 }
 
+                //Determine position to render to
+                dstClip.x = x;
+                dstClip.y = y;
+                dstClip.w = currentClip->w;
+                dstClip.h = currentClip->h;
                 //Render sprite texture to screen
-                gFooTexture.render( x, y, currentClip );
+                gFooTexture.render( currentClip, &dstClip );
 
                 //Update screen
                 SDL_RenderPresent( gRenderer );
