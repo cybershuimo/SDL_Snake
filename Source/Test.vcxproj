@@ -19,7 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="_code\class-snakeMove.cpp" />
+    <ClInclude Include="_code\snake.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="_code\snake-main.cpp" />
+    <ClCompile Include="_code\snake-methods.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
