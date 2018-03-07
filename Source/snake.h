@@ -1,16 +1,19 @@
 //Snake head file
 //Class prototypes and global variable declaration
 
+#ifndef SNAKE_H_
+#define SNAKE_H_
+
 //Using SDL, SDL_image, standard IO, and strings
 #include <iostream>
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <string>
+#include <sstream>  //std::stringstream needed
 
 //check memory leak
 #include <vld.h>
-
 
 //Texture wrapper class
 class LTexture
@@ -60,13 +63,13 @@ class LTexture
         int mHeight;
 };
 
-//The snake body that follows snake head
+//Basic box object class
 class Tile
 {
     public:
         //The dimensions of the snake body tile
-        static const int TILE_WIDTH = 20;
-        static const int TILE_HEIGHT = 20;
+        // static const int TILE_WIDTH = 20;
+        // static const int TILE_HEIGHT = 20;
 
         //Initializes
         Tile( int x, int y );
@@ -74,8 +77,8 @@ class Tile
         //Sets position
         void setPosition( int x, int y );
 
-        //Shows the tile
-        // void render( LTexture tileTexture ); // not working?
+        //Sets size
+        void setSize( int w, int h );
 
         //Get the collision box
         SDL_Rect getBox();
@@ -85,6 +88,8 @@ class Tile
         SDL_Rect mBox;
 };
 
+
+//SnakeBody object class come from Tile
 class SnakeBody : public Tile
 {
     public:
@@ -92,13 +97,13 @@ class SnakeBody : public Tile
         SnakeBody( int x, int y );
 
         //Moves snake body
-        void move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect, bool &gameOver );
+        void move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect, bool &gameOverFlag );
 
         //Show snake body tile
         void render();
-
 };
 
+//Food object class come from Tile
 class Food : public Tile
 {
     public:
@@ -115,6 +120,38 @@ class Food : public Tile
         bool eaten( SDL_Rect snakeHead );
 };
 
+//Button object class come from Tile
+class Button : public Tile
+{
+    public:
+        enum ButtonType
+        {
+            BUTTON_ON,
+            BUTTON_OFF,
+            BUTTON_TOTAL
+        };
+
+        //Initializes
+        Button( int x, int y );
+
+        //Handles mouse event
+        void handleEvent( SDL_Event& e, bool &flag );
+
+        //Change external flag
+        void changeFlag( bool &flag );
+
+        //Set type of button
+        void setButtonType( ButtonType type );
+    
+        //Shows button sprite
+        void render();
+
+    private:
+        //The attributes of the tile
+        //static ButtonType mButtonType;
+        ButtonType mButtonType;
+};
+
 //The snake that will move around on the screen
 class Snake
 {
@@ -127,16 +164,19 @@ class Snake
         static const int SNAKE_VEL = 1;
 
         //Initializes the variables and allocates particles
-        Snake( int posX = 0, int posY = 0 );
+        Snake();
 
         // //Deallocates particles
         // ~Snake();
+
+        //Restart to default status
+        //void restart();
 
         //Takes key presses and adjusts the snake's velocity
         void handleEvent( SDL_Event& e );
 
         //Moves the snake
-        void move( int &posX, int &posY, bool &gameOver );
+        void move( int &posX, int &posY, bool &gameOverFlag );
 
         //Shows the snake on the screen
         void render();
@@ -149,6 +189,9 @@ class Snake
 
         //Get the collision box
         SDL_Rect getBox();
+
+        //Sets position; used only for game restart
+        void restart();
 
     private:
         //Collision box of the snake
@@ -195,6 +238,40 @@ class LTimer
         //Why not duration?
 };
 
+class UI
+{
+        LTimer liveTime;
+        bool mStarted;
+
+        int numFoodEaten;
+
+        std::stringstream liveTimeText;
+        std::stringstream numFoodEatenText;
+        SDL_Color textColor = { 93, 188, 210 };
+
+    public:
+        //Initializes variables
+        UI();
+
+        //Update numFoodEaten
+        void updateFoodEaten();
+
+        //Render on the screen
+        void render();
+
+        //Start the timer
+        void start();
+        
+        //When game over, stop the timer
+        void paused();
+
+        //Restart variables after restarting game
+        void restart();
+
+        //Check status of the timer
+        bool isStarted();
+};
+
 //Starts up SDL and creates window
 bool init();
 
@@ -226,3 +303,8 @@ extern LTexture gSnakeTexture;
 extern LTexture gBodyTexture;
 extern LTexture gFoodTexture;
 extern LTexture gTextTexture;
+extern LTexture gButtonOnTexture;
+extern LTexture gButtonOffTexture;
+extern LTexture gUITexture[ 2 ];
+
+#endif

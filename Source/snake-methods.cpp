@@ -1,15 +1,16 @@
-//class prototypes，Snake class and Food class
-//basic actions, snake head move
+//Class methods and function declaration file
+
+#include "snake.h"
 
 //Using SDL, SDL_image, standard IO, and strings
 #include <iostream>
 #include <SDL.h>
 #include <SDL_image.h>
-//#include <SDL_ttf.h>
+#include <SDL_ttf.h>
 #include <stdio.h>
+#include <cstdlib>  //rand() needed
 #include <string>
-//#include <fstream>  //file reading and writing with SDL RWOps
-//#include <vector>
+#include <iomanip> // setprecision
 
 //check memory leak
 #include <vld.h>
@@ -18,175 +19,6 @@
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-//Snake body length limit
-const int BODY_LIMIT = 100;
-
-//The snake body that follows snake head
-class Tile
-{
-    public:
-        //The dimensions of the snake body tile
-        static const int TILE_WIDTH = 20;
-        static const int TILE_HEIGHT = 20;
-
-        //Initializes
-        Tile( int x, int y );
-
-        //Sets position
-        void setPosition( int x, int y );
-
-        //Shows the tile
-        void render();
-
-        //Get the collision box
-        SDL_Rect getBox();
-
-    private:
-        //The attributes of the tile
-        SDL_Rect mBox;
-};
-
-
-//The snake that will move around on the screen
-class Snake
-{
-    public:
-        //The dimensions of the snake
-        static const int SNAKE_WIDTH = 20;
-        static const int SNAKE_HEIGHT = 20;
-
-        //Maximum axis velocity of the snake
-        static const int SNAKE_VEL = 20;
-
-        //Initializes the variables and allocates particles
-        Snake();
-
-        // //Deallocates particles
-        // ~Snake();
-
-        //Takes key presses and adjusts the snake's velocity
-        void handleEvent( SDL_Event& e );
-
-        //Moves the snake
-        void move( float timeStep );
-
-        //Shows the snake on the screen
-        void render();
-
-        //Gets length of snake body
-        int getLength();
-
-        //Get the collision box
-        SDL_Rect getBox();
-
-    private:
-        //Collision box of the snake
-        SDL_Rect mBox;
-
-        //The velocity of the snake
-        float mVelX, mVelY;
-
-        //The body length of the snake
-        int mBody;
-};
-
-
-//Texture wrapper class
-class LTexture
-{
-    public:
-        //Initializes variables
-        LTexture();
-
-        //Deallocates memory
-        ~LTexture();
-
-        //Loads image at specified path
-        bool loadFromFile( std::string path );
-
-        #ifdef _SDL_TTF_H
-        //Creates image from font string
-        //If SDL_ttf is not defined, ignore this piece of code.
-        bool loadFromRenderedText( std::string textureText, SDL_Color textColor );
-        #endif
-
-        //Deallocates texture
-        void free();
-
-        //Set color modification of texture
-        void setColor( Uint8 red, Uint8 green, Uint8 blue );
-
-        //Set blending
-        void setBlendMode( SDL_BlendMode blending );
-
-        //Set alpha modulation
-        void setAlpha( Uint8 alpha );
-
-        //Renders texture at given point, and whether it is a clip
-        void render( int x, int y, SDL_Rect* clip = NULL, 
-            double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE );
-
-        //Gets image dimensions
-        int getWidth();
-        int getHeight();
-
-    private:
-        //The actual hardware texture
-        SDL_Texture* mTexture;
-
-        //Image dimensions
-        int mWidth;
-        int mHeight;
-};
-
-
-//The application time based timer
-class LTimer
-{
-    public:
-        //Initializes variables
-        LTimer();
-
-        //The various clock actions
-        void start();
-        void stop();
-        void pause();
-        void unpause();
-
-        //Gets the timer's time
-        Uint32 getTicks();
-
-        //Checks the status of the timer
-        bool isStarted();
-        bool isPaused();
-
-    private:
-        //The clock time when the timer started
-        Uint32 mStartTicks;
-
-        //The ticks stored when the timer was paused
-        Uint32 mPausedTicks;
-
-        //The timer status
-        bool mPaused;
-        bool mStarted;
-
-        //Why not duration?
-};
-//Starts up SDL and creates window
-bool init();
-
-//Loads media
-bool loadMedia();
-
-//Frees media and shuts down SDL
-void close();
-
-//Store last position, move one by one
-void moveBody( Tile* snakeBody[], int length, int posX, int posY );
-
-//Box collision detector
-bool checkCollision( SDL_Rect a, SDL_Rect b );
 
 // Global variables
 //The window we'll be rendering to
@@ -195,14 +27,19 @@ SDL_Window* gWindow = NULL;
 //The window renderer
 SDL_Renderer* gRenderer = NULL;
 
+//Globally used font
+TTF_Font *gFont = NULL;
+
 //Texture to render
 LTexture gSnakeTexture;
 LTexture gBodyTexture;
+LTexture gFoodTexture;
+LTexture gTextTexture;
+LTexture gButtonOnTexture;
+LTexture gButtonOffTexture;
 
-//The snake that will be moving around on the screen
-Snake snake;
-//Snake body tiles
-Tile* snakeBody[ BODY_LIMIT ];
+LTexture gUITexture[ 2 ];
+
 
 // Class Tile, used for snake body tiles
 //Initializes position and type
@@ -211,9 +48,9 @@ Tile::Tile( int x, int y )
     //Get the offsets
     setPosition( x, y );
     
-    //Set the collision box
-    mBox.w = TILE_WIDTH;
-    mBox.h = TILE_HEIGHT;
+    // //Set the collision box
+    // mBox.w = TILE_WIDTH;
+    // mBox.h = TILE_HEIGHT;
 }
 
 void Tile::setPosition( int x, int y )
@@ -223,16 +60,176 @@ void Tile::setPosition( int x, int y )
     mBox.y = y;
 }
 
-//Show the tile
-void Tile::render()
+void Tile::setSize( int w, int h )
 {
-    gBodyTexture.render( mBox.x, mBox.y );
+    //Set the width and height
+    mBox.w = w;
+    mBox.h = h;
 }
 
 //Get the collision box
 SDL_Rect Tile::getBox()
 {
     return mBox;
+}
+
+// Class SnakeBody
+//Initializes
+SnakeBody::SnakeBody( int x, int y ) : Tile( x, y )
+{
+    setSize( 20, 20 );
+    // printf( "New snakeBody part created. Location %i, %i\n", x, y );
+}
+
+//Snake body moves; following snake head one by one
+void SnakeBody::move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect, bool &gameOverFlag )
+{
+    //Store last position
+    int lastX = getBox().x;
+    int lastY = getBox().y;
+
+    setPosition( posX, posY );
+    //printf( "posX is %i, posY is %i\n", posX, posY );
+
+    // if collided with new rect, stand back
+    if ( checkCollision( getBox(), newRect ) )
+    {
+        setPosition( lastX, lastY );
+    }
+
+    // if collided with snake head rect, set game over flag
+    if ( checkCollision( getBox(), headRect ) )
+    {
+        gameOverFlag = true;
+    }
+
+    // pass last position to the following tile
+    posX = lastX;
+    posY = lastY;
+}
+
+//Show snake body tile
+void SnakeBody::render()
+{
+    gBodyTexture.render( getBox().x, getBox().y );
+}
+
+
+// Class Food
+//Initializes
+Food::Food( int x, int y ) : Tile( x, y )
+{
+    setSize( 20, 20 );
+    // printf( "New snakeBody part created. Location %i, %i\n", x, y );
+}
+
+//Appears at random position; TODO other better method to randomize position
+void Food::generate()
+{
+    int randX = rand() % 32;
+    int randY = rand() % 24;
+    setPosition( randX * 20, randY * 20 );
+}
+
+//Show food tile
+void Food::render()
+{
+    gFoodTexture.render( getBox().x, getBox().y );
+}
+
+//Check if touched by snake head;
+bool Food::eaten( SDL_Rect snakeHead )
+{
+    if ( checkCollision( getBox(), snakeHead ) )
+    {
+        return true;
+    }
+
+    return false;
+}
+
+
+// Class Button, generated from Class Tile
+//Initializes
+Button::Button( int x, int y ) : Tile( x, y )
+{
+    setPosition( ( SCREEN_WIDTH - gButtonOffTexture.getWidth() ) / 2, ( SCREEN_HEIGHT - gButtonOffTexture.getHeight() ) * 2 / 3 );
+    setSize( gButtonOffTexture.getWidth(), gButtonOffTexture.getHeight() );
+    mButtonType = BUTTON_OFF;
+}
+
+//Handles mouse event
+void Button::handleEvent( SDL_Event& e, bool &flag )
+{
+    //If mouse event happened
+    if( e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP )
+    {
+        //Get mouse position
+        int x, y;
+        SDL_GetMouseState( &x, &y );
+        //Check if mouse is in button
+        bool inside = true;
+
+        //Mouse is left of the button
+        if( x < getBox().x )
+        {
+            inside = false;
+        }
+        //Mouse is right of the button
+        else if( x > getBox().x + getBox().w )
+        {
+            inside = false;
+        }
+        //Mouse above the button
+        else if( y < getBox().y )
+        {
+            inside = false;
+        }
+        //Mouse below the button
+        else if( y > getBox().y + getBox().h )
+        {
+            inside = false;
+        }
+
+        //Mouse is inside button
+        if( inside && e.type == SDL_MOUSEBUTTONDOWN)
+        {
+            // mouse button is pressed and heldon
+            setButtonType( BUTTON_ON );
+        }
+        else if ( inside && e.type == SDL_MOUSEBUTTONUP )
+        {
+            // mouse button is released
+            setButtonType( BUTTON_OFF );
+            changeFlag( flag );
+        }
+    }
+}
+
+//Change external flag
+void Button::changeFlag( bool &flag )
+{
+    flag = !flag;
+}
+
+//Set type of button
+void Button::setButtonType( Button::ButtonType type )
+{
+    mButtonType = type;
+}
+
+void Button::render()
+{
+    switch( mButtonType )
+    {
+        case BUTTON_OFF:
+        gButtonOffTexture.render( getBox().x, getBox().y ); //Temperary Texture
+        break;
+
+        case BUTTON_ON:
+        gButtonOnTexture.render( getBox().x, getBox().y );  //Temperary Texture
+        break;
+    }
 }
 
 
@@ -263,6 +260,12 @@ Snake::Snake()
 //         particles[ i ]->mTexture = NULL;
 //         delete particles[ i ];
 //     }
+// }
+
+//Restart to default status
+// void restart()
+// {
+//     Snake();    
 // }
 
 void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
@@ -305,45 +308,58 @@ void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
     // }
 }
 
-void Snake::move( float timeStep )
+//Store last position to posX, posY, and move snake collision box
+void Snake::move( int &posX, int &posY, bool &gameOverFlag )
 {
-    //Store last position
-    moveBody( snakeBody, mBody, mBox.x, mBox.y );
-
+    //Store last position; use reference &x to change arguments
+    posX = mBox.x;
+    posY = mBox.y;
+    //printf( "posX stored %i, posY stored %i\n", posX, posY );
+    
     //Move the snake left or right
-    mBox.x += mVelX * timeStep;
+    mBox.x += mVelX * SNAKE_WIDTH; 
 
     //If the snake touches the boarder
     if ( mBox.x < 0 )
     {
         mBox.x = 0;
+        gameOverFlag = true;
     }
     else if( mBox.x + SNAKE_WIDTH > SCREEN_WIDTH )
     {
         //Move back
         mBox.x = SCREEN_WIDTH - SNAKE_WIDTH;
+        gameOverFlag = true;
     }
 
     //Move the snake up or down
-    mBox.y += mVelY * timeStep;
+    mBox.y += mVelY * SNAKE_HEIGHT;
 
     //If the snake touches the boarder
     if ( mBox.y < 0 )
     {
         mBox.y = 0;
+        gameOverFlag = true;
     }
     else if( mBox.y + SNAKE_HEIGHT > SCREEN_HEIGHT )
     {
         //Move back
         mBox.y = SCREEN_HEIGHT - SNAKE_HEIGHT;
+        gameOverFlag = true;
     }
+    
 }
-
 
 void Snake::render()
 {
     //Show the snake relative to the camera
     gSnakeTexture.render( mBox.x, mBox.y );
+}
+
+//Add one body tile after eating food
+void Snake::addLength()
+{
+    ++mBody;
 }
 
 int Snake::getLength()
@@ -356,7 +372,18 @@ SDL_Rect Snake::getBox()
     return mBox;
 }
 
+void Snake::restart()
+{
+    mBox.x = 360;
+    mBox.y = 200;
+    
+    //Initialize the velocity
+    mVelX = -SNAKE_VEL;
+    mVelY = 0;
 
+    //Initialize the snake body length
+    mBody = 5;
+}
 
 // Initializes
 LTexture::LTexture()
@@ -617,6 +644,73 @@ bool LTimer::isPaused()
     return mStarted && mPaused;
 }
 
+// UI class methods
+// Initializes
+UI::UI()
+{
+    //Initialize the variables
+    mStarted = false;
+    numFoodEaten = 0;
+}
+
+void UI::updateFoodEaten()
+{
+    //Add num of food eaten by one
+    ++numFoodEaten;
+}
+
+void UI::render()
+{
+    // 0 = numFoodEaten; 1 = liveTime
+    //Set text to be rendered
+    using namespace std;
+
+    liveTimeText.str( "" );
+    liveTimeText << "LIVE TIME: " << fixed << setprecision(4) << liveTime.getTicks() / 1000.0;
+    //liveTimeText << "LIVE TIME: " << fixed << setprecision(2) << liveTime.getTicks();
+    numFoodEatenText.str( "" );
+    numFoodEatenText << "FOOD EATEN: " << numFoodEaten;
+
+    //Render text
+    if( !gUITexture[ 0 ].loadFromRenderedText( liveTimeText.str().c_str(), textColor ) )
+    {
+        printf( "Failed to render UI liveTime texture!\n" );
+    }
+    else if( !gUITexture[ 1 ].loadFromRenderedText( numFoodEatenText.str().c_str(), textColor ) )
+    {
+        printf( "Failed to render UI numFoodEaten texture!\n" );
+    }
+
+    //Render text textures
+    gUITexture[ 0 ].render( ( SCREEN_WIDTH / 2 - gUITexture[ 0 ].getWidth() ) / 2, 20 );
+    gUITexture[ 1 ].render( ( SCREEN_WIDTH / 2 - gUITexture[ 0 ].getWidth() ) / 2 + SCREEN_WIDTH / 2, 20 );
+}
+
+//When game over, stop the timer
+void UI::start()
+{
+    liveTime.start();
+    mStarted = true;
+}
+
+//When game over, stop the timer
+void UI::paused()
+{
+    liveTime.stop();
+    mStarted = false;
+}
+
+void UI::restart()
+{
+    //liveTime.start();
+    numFoodEaten = 0;
+}
+
+bool UI::isStarted()
+{
+    return mStarted;
+}
+
 bool init()
 {
     //Initialization flag
@@ -659,12 +753,12 @@ bool init()
                     success = false;
                 }
 
-                // //Initialize SDL_ttf
-                // if( TTF_Init() == -1 )
-                // {
-                //     printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
-                //     success = false;
-                // }
+                //Initialize SDL_ttf
+                if( TTF_Init() == -1 )
+                {
+                    printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
+                    success = false;
+                }
             }
         }
     }
@@ -678,7 +772,7 @@ bool loadMedia()
     //Loading success flag
     bool success = true;
 
-    //Load snake head texture
+    //Load snake head, bocy, food texture
     if( !gSnakeTexture.loadFromFile( "_graphic/SnakeHead.png" ) )
     {
         printf( "Failed to load snake head texture!\n" );
@@ -689,6 +783,48 @@ bool loadMedia()
         printf( "Failed to load snake body texture!\n" );
         success = false;
     }
+    else if( !gFoodTexture.loadFromFile( "_graphic/Food-1.png" ) )
+    {
+        printf( "Failed to load food texture!\n" );
+        success = false;
+    }
+
+    //Load font texture
+    //Open the font
+    gFont = TTF_OpenFont( "_graphic/game_over.ttf", 40 );
+
+    if( gFont == NULL )
+    {
+        printf( "Failed to load game_over font! SDL_ttf Error: %s\n", TTF_GetError() );
+        success = false;
+    }
+    else
+    {
+        // set the loaded font's outline to 5 pixel wide
+        //TTF_SetFontOutline(gFont, 1);
+        //Render text
+        SDL_Color gameOverColor = { 200, 0, 0 };
+        if( !gTextTexture.loadFromRenderedText( "GAME  OVER", gameOverColor ) )
+        {
+            printf( "Failed to render text texture!\n" );
+            success = false;
+        }
+
+        SDL_Color snakeHeadColor = { 93, 188, 210 };
+        if( !gButtonOffTexture.loadFromRenderedText( "PLAY  AGAIN", snakeHeadColor ) )
+        {
+            printf( "Failed to render PLAY AGAIN button texture!\n" );
+            success = false;
+        }
+        
+        SDL_Color snakeBodyColor = { 35, 177, 77 };
+        if( !gButtonOnTexture.loadFromRenderedText( "PLAY  AGAIN", snakeBodyColor ) )
+        {
+            printf( "Failed to render PLAY AGAIN button texture!\n" );
+            success = false;
+        }
+
+    }
 
     return success;
 }
@@ -698,10 +834,19 @@ void close()
     //Free loaded images
     gSnakeTexture.free();
     gBodyTexture.free();
+    gFoodTexture.free();
+    gTextTexture.free();
+    gButtonOnTexture.free();
+    gButtonOffTexture.free();
+
+    for (int i = 0; i < 2; ++i)
+    {
+        gUITexture[ i ].free();
+    }
 
     //Free global font
-    // TTF_CloseFont( gFont );
-    // gFont = NULL;
+    TTF_CloseFont( gFont );
+    gFont = NULL;
     
     //Destroy window
     SDL_DestroyRenderer( gRenderer );
@@ -711,30 +856,12 @@ void close()
 
     //Quit SDL subsystems
     //Clean up all dynamically loaded library handles, freeing memory
-    //TTF_Quit();
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
 
     printf( "Unload resource successfully. Close the window as you like.\n" );
     std::cin.get(); 
-}
-
-void moveBody( Tile* snakeBody[], int length, int posX, int posY )
-{
-    for (int i = length - 1; i > 0; --i)
-    {
-        //Store the followed tile position
-        SDL_Rect lastPosition = snakeBody[ i - 1 ]->getBox();
-        if ( checkCollision( snakeBody[ i - 1 ]->getBox(), snakeBody[ i ]->getBox() ) == false )
-        {
-            snakeBody[ i ]->setPosition( lastPosition.x, lastPosition.y );
-        }
-    }
-
-    if ( checkCollision( snakeBody[ 0 ]->getBox(), snake.getBox() ) == false )
-    {
-        snakeBody[ 0 ]->setPosition( posX, posY );
-    }
 }
 
 bool checkCollision( SDL_Rect a, SDL_Rect b )
@@ -780,103 +907,4 @@ bool checkCollision( SDL_Rect a, SDL_Rect b )
 
     //If none of the sides from A are outside B
     return collision;
-}
-
-
-int main( int argc, char* args[] )
-{
-    //Start up SDL and create window
-    if( !init() )
-    {
-        printf( "Failed to initialize!\n" );
-    }
-    else
-    {
-        //Load media
-        if( !loadMedia() )
-        {
-            printf( "Failed to load media!\n" );
-        }
-        else
-        {   
-            //Main loop flag
-            bool quit = false;
-
-            //Event handler
-            SDL_Event e;
-
-            int snakeBodyLength = snake.getLength();
-            int posX = 360;   // set it as the offset X of snake head 
-            int posY = 200;   // set it as the offset Y of snake head
-
-            //Initialize snake body
-            for (int i = 0; i < snakeBodyLength; ++i)
-            {
-                posX += 20;
-                snakeBody[ i ] = new Tile( posX, posY );
-            }
-
-            //Keeps track of time between steps
-            LTimer stepTimer;
-
-            //The camera area
-            //SDL_Rect camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
-
-            //While application is running
-            while( !quit )
-            {
-                //Handle events on queue
-                while( SDL_PollEvent( &e ) != 0 )
-                {
-                    //User requests quit
-                    if( e.type == SDL_QUIT )
-                    {
-                        quit = true;
-                    }
-
-                    //Handle input for the camera
-                    snake.handleEvent( e );
-                }
-
-                //Calculate time step; why 1000, move too slowly?
-                float timeStep = stepTimer.getTicks() / 100.f;
-
-                //Move the snake
-                snake.move( timeStep );
-                
-                //Restart step timer; too early?
-                stepTimer.start();
-
-                //Clear screen; black background color
-                SDL_SetRenderDrawColor( gRenderer, 0x00, 0x00, 0x00, 0xFF );
-                SDL_RenderClear( gRenderer );
-
-                //Render objects
-                snake.render();
-                for (int i = 0; i < snakeBodyLength; ++i)
-                {
-                    snakeBody[ i ]->render();
-                }
-
-                //Update screen
-                SDL_RenderPresent( gRenderer );
-            }
-
-            //Deallocate snake body tiles
-            for( int i = 0; i < snakeBodyLength; ++i )
-            {
-                 if( snakeBody[ i ] != NULL )
-                 {
-                    delete snakeBody[ i ];
-                    snakeBody[ i ] = NULL;
-                 }
-            }
-        }
-
-    }
-
-    //Free resources and close SDL
-    close();
-
-    return 0;
 }
