@@ -92,6 +92,15 @@ class Tile
 //SnakeBody object class come from Tile
 class SnakeBody : public Tile
 {
+        enum BodyTileType
+            {
+                TYPE_0,
+                TYPE_1,
+                TYPE_TOTAL
+            };
+
+        // BodyTileType mBodyTileType;
+
     public:
         //Initializes
         SnakeBody( int x, int y );
@@ -100,7 +109,7 @@ class SnakeBody : public Tile
         void move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect, bool &gameOverFlag );
 
         //Show snake body tile
-        void render();
+        void render( int typeIndex );
 };
 
 //Food object class come from Tile
@@ -300,7 +309,7 @@ extern TTF_Font* gFont;
 
 //Texture to render
 extern LTexture gSnakeTexture;
-extern LTexture gBodyTexture;
+extern LTexture gBodyTexture[ 2 ];
 extern LTexture gFoodTexture;
 extern LTexture gTextTexture;
 extern LTexture gButtonOnTexture;

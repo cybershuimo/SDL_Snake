@@ -32,7 +32,7 @@ TTF_Font *gFont = NULL;
 
 //Texture to render
 LTexture gSnakeTexture;
-LTexture gBodyTexture;
+LTexture gBodyTexture[ 2 ];
 LTexture gFoodTexture;
 LTexture gTextTexture;
 LTexture gButtonOnTexture;
@@ -108,10 +108,11 @@ void SnakeBody::move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect,
     posY = lastY;
 }
 
-//Show snake body tile
-void SnakeBody::render()
+//Render snake body tile; typeIndex default snake body length
+void SnakeBody::render( int typeIndex )
 {
-    gBodyTexture.render( getBox().x, getBox().y );
+    unsigned int tileType = typeIndex % TYPE_TOTAL;
+    gBodyTexture[ tileType ].render( getBox().x, getBox().y ); 
 }
 
 
@@ -769,29 +770,39 @@ bool init()
 
 bool loadMedia()
 {
+    using namespace std;
+    std::stringstream filename;
+
     //Loading success flag
     bool success = true;
 
     //Load snake head, bocy, food texture
-    if( !gSnakeTexture.loadFromFile( "_graphic/SnakeHead.png" ) )
+    if( !gSnakeTexture.loadFromFile( "../../Resource/SnakeHead.png" ) )
     {
         printf( "Failed to load snake head texture!\n" );
         success = false;
     }
-    else if( !gBodyTexture.loadFromFile( "_graphic/SnakeBody-1.png" ) )
-    {
-        printf( "Failed to load snake body texture!\n" );
-        success = false;
-    }
-    else if( !gFoodTexture.loadFromFile( "_graphic/Food-1.png" ) )
+    else if( !gFoodTexture.loadFromFile( "../../Resource/Food_0.png" ) )
     {
         printf( "Failed to load food texture!\n" );
         success = false;
     }
 
+    for (int i = 0; i < 2; ++i)
+    {
+        filename.str( "" );
+        filename << "../../Resource/SnakeBody_" << i << ".png";
+
+        if( !gBodyTexture[ i ].loadFromFile( filename.str().c_str() ) )
+        {
+            printf( "Failed to load snake body %i texture!\n", i );
+            success = false;
+        }
+    }
+
     //Load font texture
     //Open the font
-    gFont = TTF_OpenFont( "_graphic/game_over.ttf", 40 );
+    gFont = TTF_OpenFont( "../../Resource/game_over.ttf", 40 );
 
     if( gFont == NULL )
     {
@@ -833,7 +844,12 @@ void close()
 {
     //Free loaded images
     gSnakeTexture.free();
-    gBodyTexture.free();
+    
+    for (int i = 0; i < 2; ++i)
+    {
+        gBodyTexture[ i ].free();
+    }
+    
     gFoodTexture.free();
     gTextTexture.free();
     gButtonOnTexture.free();

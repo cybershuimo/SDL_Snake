@@ -123,7 +123,7 @@ int main( int argc, char* args[] )
                     //snake.render();
                     for (int i = 0; i < snakeBodyLength; ++i)
                     {
-                        snakeBody[ i ]->render();
+                        snakeBody[ i ]->render( i );
                     }
                     snake.render();
 
@@ -189,7 +189,7 @@ int main( int argc, char* args[] )
                     //Render objects
                     for (int i = 0; i < snakeBodyLength; ++i)
                     {
-                        snakeBody[ i ]->render();
+                        snakeBody[ i ]->render( i );
                     }
                     snake.render();
 
