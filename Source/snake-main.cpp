@@ -144,7 +144,7 @@ int main( int argc, char* args[] )
                         {
                             snakeBody[ snakeBodyLength - 1 ] = new SnakeBody( posX, posY );
                         }
-                        //Update numFoodEaten on UI
+                        //Update numFoodEaten on UI; Play eating sound effect(TODO)
                         ui.updateFoodEaten();   
                     }
 
@@ -196,7 +196,7 @@ int main( int argc, char* args[] )
                     //Keeps track of time between steps
                     stepTimer.start();
 
-                    //Restart UI
+                    //Restart UI; Play PA sound effect(TODO)
                     ui.restart();
 
                     //Change the game over flags to default states

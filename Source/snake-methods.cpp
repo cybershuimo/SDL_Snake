@@ -7,6 +7,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <stdio.h>
 #include <cstdlib>  //rand() needed
 #include <string>
@@ -29,6 +30,18 @@ SDL_Renderer* gRenderer = NULL;
 
 //Globally used font
 TTF_Font *gFont = NULL;
+
+//The sound effects that will be used
+//0 = FoodEaten; 1 = GameOver; 2 = PlayAgain
+enum SoundEffects
+{
+    FOOD_EATEN,
+    GAME_OVER,
+    PLAY_AGAIN,
+    SE_TOTAL
+};
+
+Mix_Chunk* gSoundEffects[ SE_TOTAL ];
 
 //Texture to render
 LTexture gSnakeTexture;
@@ -125,6 +138,7 @@ Food::Food( int x, int y ) : Tile( x, y )
 }
 
 //Appears at random position; TODO other better method to randomize position
+//Play sound effect when food eaten
 void Food::generate()
 {
     int randX = rand() % 32;
@@ -658,6 +672,8 @@ void UI::updateFoodEaten()
 {
     //Add num of food eaten by one
     ++numFoodEaten;
+
+    Mix_PlayChannel( -1, gSoundEffects[ FOOD_EATEN ], 0 );    //Play SE once
 }
 
 void UI::render()
@@ -694,10 +710,16 @@ void UI::start()
     mStarted = true;
 }
 
-//When game over, stop the timer
+//When game over, stop the timer; Play GAME_OVER SE once
 void UI::paused()
 {
     liveTime.stop();
+    if ( mStarted )
+    {
+        Mix_Volume( -1, MIX_MAX_VOLUME/2 ); //Set all channel volumn to half
+        Mix_PlayChannel( -1, gSoundEffects[ GAME_OVER ], 0 );    //Play GAME_OVER SE once
+        Mix_Volume( -1, -1 );   //Unset channel volumns
+    }
     mStarted = false;
 }
 
@@ -705,6 +727,8 @@ void UI::restart()
 {
     //liveTime.start();
     numFoodEaten = 0;
+
+    Mix_PlayChannel( -1, gSoundEffects[ PLAY_AGAIN ], 0 );    //Play SE once
 }
 
 bool UI::isStarted()
@@ -758,6 +782,13 @@ bool init()
                 if( TTF_Init() == -1 )
                 {
                     printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
+                    success = false;
+                }
+
+                //Initialize SDL_mixer
+                if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+                {
+                    printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
                     success = false;
                 }
             }
@@ -837,6 +868,20 @@ bool loadMedia()
 
     }
 
+    //Load sound effects
+    for (int i = 0; i < SE_TOTAL; ++i)
+    {
+        filename.str( "" );
+        filename << "../../Resource/SE_" << i << ".wav";
+
+        gSoundEffects[ i ] = Mix_LoadWAV( filename.str().c_str() );
+        if( gSoundEffects[ i ] == NULL )
+        {
+            printf( "Failed to load SoundEffects[ %i ]! SDL_mixer Error: %s\n", i, Mix_GetError() );
+            success = false;
+        }
+    }
+
     return success;
 }
 
@@ -863,6 +908,16 @@ void close()
     //Free global font
     TTF_CloseFont( gFont );
     gFont = NULL;
+    
+    //Free sound effects
+    for (int i = 0; i < SE_TOTAL; ++i)
+    {
+        if ( gSoundEffects[ i ] != NULL )
+        {
+            Mix_FreeChunk( gSoundEffects[ i ] );
+            gSoundEffects[ i ] = NULL;
+        }    
+    }
     
     //Destroy window
     SDL_DestroyRenderer( gRenderer );

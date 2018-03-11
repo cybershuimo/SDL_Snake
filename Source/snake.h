@@ -9,6 +9,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <string>
 #include <sstream>  //std::stringstream needed
 
@@ -93,11 +94,11 @@ class Tile
 class SnakeBody : public Tile
 {
         enum BodyTileType
-            {
-                TYPE_0,
-                TYPE_1,
-                TYPE_TOTAL
-            };
+        {
+            TYPE_0,
+            TYPE_1,
+            TYPE_TOTAL
+        };
 
         // BodyTileType mBodyTileType;
 
@@ -306,6 +307,9 @@ extern SDL_Renderer* gRenderer;
 
 //Globally used font
 extern TTF_Font* gFont;
+
+//The sound effects that will be used
+extern Mix_Chunk* gSoundEffects[ 3 ];
 
 //Texture to render
 extern LTexture gSnakeTexture;
