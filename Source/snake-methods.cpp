@@ -683,10 +683,10 @@ void UI::render()
     using namespace std;
 
     liveTimeText.str( "" );
-    liveTimeText << "LIVE TIME: " << fixed << setprecision(4) << liveTime.getTicks() / 1000.0;
+    liveTimeText << "LIVE TIME:  " << fixed << setprecision( 2 ) << liveTime.getTicks() / 1000.0;
     //liveTimeText << "LIVE TIME: " << fixed << setprecision(2) << liveTime.getTicks();
     numFoodEatenText.str( "" );
-    numFoodEatenText << "FOOD EATEN: " << numFoodEaten;
+    numFoodEatenText << "FOOD EATEN:  " << numFoodEaten;
 
     //Render text
     if( !gUITexture[ 0 ].loadFromRenderedText( liveTimeText.str().c_str(), textColor ) )
@@ -833,7 +833,7 @@ bool loadMedia()
 
     //Load font texture
     //Open the font
-    gFont = TTF_OpenFont( "../../Resource/game_over.ttf", 40 );
+    gFont = TTF_OpenFont( "../../Resource/WenQuanYiMicroHei-01.ttf", 20 );
 
     if( gFont == NULL )
     {
