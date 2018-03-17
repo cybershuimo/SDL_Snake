@@ -7,6 +7,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <stdio.h>
 #include <cstdlib>  //rand() needed
 #include <string>
@@ -30,9 +31,21 @@ SDL_Renderer* gRenderer = NULL;
 //Globally used font
 TTF_Font *gFont = NULL;
 
+//The sound effects that will be used
+//0 = FoodEaten; 1 = GameOver; 2 = PlayAgain
+enum SoundEffects
+{
+    FOOD_EATEN,
+    GAME_OVER,
+    PLAY_AGAIN,
+    SE_TOTAL
+};
+
+Mix_Chunk* gSoundEffects[ SE_TOTAL ];
+
 //Texture to render
 LTexture gSnakeTexture;
-LTexture gBodyTexture;
+LTexture gBodyTexture[ 2 ];
 LTexture gFoodTexture;
 LTexture gTextTexture;
 LTexture gButtonOnTexture;
@@ -108,10 +121,11 @@ void SnakeBody::move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect,
     posY = lastY;
 }
 
-//Show snake body tile
-void SnakeBody::render()
+//Render snake body tile; typeIndex default snake body length
+void SnakeBody::render( int typeIndex )
 {
-    gBodyTexture.render( getBox().x, getBox().y );
+    unsigned int tileType = typeIndex % TYPE_TOTAL;
+    gBodyTexture[ tileType ].render( getBox().x, getBox().y ); 
 }
 
 
@@ -124,6 +138,7 @@ Food::Food( int x, int y ) : Tile( x, y )
 }
 
 //Appears at random position; TODO other better method to randomize position
+//Play sound effect when food eaten
 void Food::generate()
 {
     int randX = rand() % 32;
@@ -657,6 +672,8 @@ void UI::updateFoodEaten()
 {
     //Add num of food eaten by one
     ++numFoodEaten;
+
+    Mix_PlayChannel( -1, gSoundEffects[ FOOD_EATEN ], 0 );    //Play SE once
 }
 
 void UI::render()
@@ -666,10 +683,10 @@ void UI::render()
     using namespace std;
 
     liveTimeText.str( "" );
-    liveTimeText << "LIVE TIME: " << fixed << setprecision(4) << liveTime.getTicks() / 1000.0;
+    liveTimeText << "LIVE TIME:  " << fixed << setprecision( 2 ) << liveTime.getTicks() / 1000.0;
     //liveTimeText << "LIVE TIME: " << fixed << setprecision(2) << liveTime.getTicks();
     numFoodEatenText.str( "" );
-    numFoodEatenText << "FOOD EATEN: " << numFoodEaten;
+    numFoodEatenText << "FOOD EATEN:  " << numFoodEaten;
 
     //Render text
     if( !gUITexture[ 0 ].loadFromRenderedText( liveTimeText.str().c_str(), textColor ) )
@@ -693,10 +710,16 @@ void UI::start()
     mStarted = true;
 }
 
-//When game over, stop the timer
+//When game over, stop the timer; Play GAME_OVER SE once
 void UI::paused()
 {
     liveTime.stop();
+    if ( mStarted )
+    {
+        Mix_Volume( -1, MIX_MAX_VOLUME/2 ); //Set all channel volumn to half
+        Mix_PlayChannel( -1, gSoundEffects[ GAME_OVER ], 0 );    //Play GAME_OVER SE once
+        Mix_Volume( -1, -1 );   //Unset channel volumns
+    }
     mStarted = false;
 }
 
@@ -704,6 +727,8 @@ void UI::restart()
 {
     //liveTime.start();
     numFoodEaten = 0;
+
+    Mix_PlayChannel( -1, gSoundEffects[ PLAY_AGAIN ], 0 );    //Play SE once
 }
 
 bool UI::isStarted()
@@ -759,6 +784,13 @@ bool init()
                     printf( "SDL_ttf could not initialize! SDL_ttf Error: %s\n", TTF_GetError() );
                     success = false;
                 }
+
+                //Initialize SDL_mixer
+                if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+                {
+                    printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+                    success = false;
+                }
             }
         }
     }
@@ -769,29 +801,39 @@ bool init()
 
 bool loadMedia()
 {
+    using namespace std;
+    std::stringstream filename;
+
     //Loading success flag
     bool success = true;
 
     //Load snake head, bocy, food texture
-    if( !gSnakeTexture.loadFromFile( "_graphic/SnakeHead.png" ) )
+    if( !gSnakeTexture.loadFromFile( "../../Resource/SnakeHead.png" ) )
     {
         printf( "Failed to load snake head texture!\n" );
         success = false;
     }
-    else if( !gBodyTexture.loadFromFile( "_graphic/SnakeBody-1.png" ) )
-    {
-        printf( "Failed to load snake body texture!\n" );
-        success = false;
-    }
-    else if( !gFoodTexture.loadFromFile( "_graphic/Food-1.png" ) )
+    else if( !gFoodTexture.loadFromFile( "../../Resource/Food_0.png" ) )
     {
         printf( "Failed to load food texture!\n" );
         success = false;
     }
 
+    for (int i = 0; i < 2; ++i)
+    {
+        filename.str( "" );
+        filename << "../../Resource/SnakeBody_" << i << ".png";
+
+        if( !gBodyTexture[ i ].loadFromFile( filename.str().c_str() ) )
+        {
+            printf( "Failed to load snake body %i texture!\n", i );
+            success = false;
+        }
+    }
+
     //Load font texture
     //Open the font
-    gFont = TTF_OpenFont( "_graphic/game_over.ttf", 40 );
+    gFont = TTF_OpenFont( "../../Resource/WenQuanYiMicroHei-01.ttf", 20 );
 
     if( gFont == NULL )
     {
@@ -826,6 +868,20 @@ bool loadMedia()
 
     }
 
+    //Load sound effects
+    for (int i = 0; i < SE_TOTAL; ++i)
+    {
+        filename.str( "" );
+        filename << "../../Resource/SE_" << i << ".wav";
+
+        gSoundEffects[ i ] = Mix_LoadWAV( filename.str().c_str() );
+        if( gSoundEffects[ i ] == NULL )
+        {
+            printf( "Failed to load SoundEffects[ %i ]! SDL_mixer Error: %s\n", i, Mix_GetError() );
+            success = false;
+        }
+    }
+
     return success;
 }
 
@@ -833,7 +889,12 @@ void close()
 {
     //Free loaded images
     gSnakeTexture.free();
-    gBodyTexture.free();
+    
+    for (int i = 0; i < 2; ++i)
+    {
+        gBodyTexture[ i ].free();
+    }
+    
     gFoodTexture.free();
     gTextTexture.free();
     gButtonOnTexture.free();
@@ -847,6 +908,16 @@ void close()
     //Free global font
     TTF_CloseFont( gFont );
     gFont = NULL;
+    
+    //Free sound effects
+    for (int i = 0; i < SE_TOTAL; ++i)
+    {
+        if ( gSoundEffects[ i ] != NULL )
+        {
+            Mix_FreeChunk( gSoundEffects[ i ] );
+            gSoundEffects[ i ] = NULL;
+        }    
+    }
     
     //Destroy window
     SDL_DestroyRenderer( gRenderer );
