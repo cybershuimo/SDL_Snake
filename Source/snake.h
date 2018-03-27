@@ -16,6 +16,15 @@
 //check memory leak
 #include <vld.h>
 
+enum TileType
+{
+    TYPE_SNAKEBODY_0,
+    TYPE_SNAKEBODY_1,
+    TYPE_SNAKEHEAD,
+    TYPE_FOOD_0,
+    TYPE_TOTAL
+};
+
 //Texture wrapper class
 class LTexture
 {
@@ -64,16 +73,23 @@ class LTexture
         int mHeight;
 };
 
-//Basic box object class
+//Basic box object class methods
+//General methods: Set position, Set size, Get collision box, Render
 class Tile
 {
     public:
-        //The dimensions of the snake body tile
-        // static const int TILE_WIDTH = 20;
-        // static const int TILE_HEIGHT = 20;
+        //The dimensions of the tile
+        static const int TILE_WIDTH = 20;
+        static const int TILE_HEIGHT = 20;
 
         //Initializes
         Tile( int x, int y );
+
+        //Deallocate tile (empty)
+        virtual ~Tile(){};
+
+        //Render tile
+        virtual void render( int typeIndex );
 
         //Sets position
         void setPosition( int x, int y );
@@ -81,36 +97,30 @@ class Tile
         //Sets size
         void setSize( int w, int h );
 
+        //Set tile type
+        void setTileType( TileType type );
+
         //Get the collision box
         SDL_Rect getBox();
 
-    private:
+    protected:
+        TileType mTileType;
+
         //The attributes of the tile
-        SDL_Rect mBox;
+        SDL_Rect mBox = { 0, 0, TILE_WIDTH, TILE_HEIGHT };
 };
 
 
 //SnakeBody object class come from Tile
 class SnakeBody : public Tile
 {
-        enum BodyTileType
-        {
-            TYPE_0,
-            TYPE_1,
-            TYPE_TOTAL
-        };
-
-        // BodyTileType mBodyTileType;
-
     public:
+        static snakeBodyNumber = 0;
         //Initializes
         SnakeBody( int x, int y );
 
         //Moves snake body
         void move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect, bool &gameOverFlag );
-
-        //Show snake body tile
-        void render( int typeIndex );
 };
 
 //Food object class come from Tile
@@ -122,9 +132,6 @@ class Food : public Tile
 
         //Appear at random position
         void generate();
-
-        //Show food tile
-        void render();
 
         //Disappear if touched by snake head
         bool eaten( SDL_Rect snakeHead );
@@ -154,7 +161,7 @@ class Button : public Tile
         void setButtonType( ButtonType type );
     
         //Shows button sprite
-        void render();
+        virtual void render();
 
     private:
         //The attributes of the tile
@@ -163,18 +170,14 @@ class Button : public Tile
 };
 
 //The snake that will move around on the screen
-class Snake
+class Snake : public Tile
 {
     public:
-        //The dimensions of the snake
-        static const int SNAKE_WIDTH = 20;
-        static const int SNAKE_HEIGHT = 20;
-
         //Maximum axis velocity of the snake
         static const int SNAKE_VEL = 1;
 
         //Initializes the variables and allocates particles
-        Snake();
+        Snake( int x, int y );
 
         // //Deallocates particles
         // ~Snake();
@@ -188,25 +191,16 @@ class Snake
         //Moves the snake
         void move( int &posX, int &posY, bool &gameOverFlag );
 
-        //Shows the snake on the screen
-        void render();
-
         //Add one body tile after eating food
         void addLength();
 
         //Gets length of snake body
         int getLength();
 
-        //Get the collision box
-        SDL_Rect getBox();
-
         //Sets position; used only for game restart
         void restart();
 
     private:
-        //Collision box of the snake
-        SDL_Rect mBox;
-
         //The velocity of the snake
         int mVelX, mVelY;
 
@@ -311,10 +305,8 @@ extern TTF_Font* gFont;
 //The sound effects that will be used
 extern Mix_Chunk* gSoundEffects[ 3 ];
 
-//Texture to render
-extern LTexture gSnakeTexture;
-extern LTexture gBodyTexture[ 2 ];
-extern LTexture gFoodTexture;
+//Textures to render
+extern LTexture gTileTexture[ TYPE_TOTAL ];
 extern LTexture gTextTexture;
 extern LTexture gButtonOnTexture;
 extern LTexture gButtonOffTexture;
