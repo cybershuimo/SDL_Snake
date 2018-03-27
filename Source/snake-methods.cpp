@@ -20,7 +20,6 @@
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-
 // Global variables
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
@@ -51,6 +50,8 @@ LTexture gButtonOffTexture;
 
 LTexture gUITexture[ 2 ];
 
+int SnakeBody::snakeBodyNumber = 0;
+
 
 // Class Tile, used for snake body tiles
 //Initializes position and type
@@ -61,7 +62,7 @@ Tile::Tile( int x, int y )
 }
 
 //Render tile
-void Tile::render( int typeIndex )
+void Tile::render()
 {
     gTileTexture[ mTileType ].render( mBox.x, mBox.y );
 }
@@ -80,10 +81,10 @@ void Tile::setSize( int w, int h )
     mBox.h = h;
 }
 
-void Tile::setTileType( TileType type )
+void Tile::setTileType( unsigned int type )
 {
     //Set the tile type
-    mTileType = type;
+    mTileType = static_cast<TileType>( type );
 }
 
 //Get the collision box
@@ -133,6 +134,8 @@ void SnakeBody::move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect,
 //Initializes
 Food::Food( int x, int y ) : Tile( x, y )
 {
+    //Initialize the tile type
+    setTileType( TYPE_FOOD_0 );
     // printf( "New snakeBody part created. Location %i, %i\n", x, y );
 }
 
@@ -157,7 +160,130 @@ bool Food::eaten( SDL_Rect snakeHead )
 }
 
 
-// Class Button, generated from Class Tile
+// Class Snake methods
+Snake::Snake( int x, int y ) : Tile( x, y )
+{
+    //Initialize the tile type
+    setTileType( TYPE_SNAKEHEAD );
+
+    //Initialize the velocity
+    mVelX = -SNAKE_VEL;
+    mVelY = 0;
+
+    //Initialize the snake body length
+    mBody = 5;
+}
+
+void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
+{
+    //If a key was pressed but not a repeat. Only care when the key was first pressed
+    if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
+    {
+        //Adjust the velocity
+        switch( e.key.keysym.sym )
+        {
+            case SDLK_UP:  // move up
+                mVelX = 0;
+                mVelY = -SNAKE_VEL; 
+                break;
+            case SDLK_DOWN: // move down
+                mVelX = 0;
+                mVelY = SNAKE_VEL; 
+                break;
+            case SDLK_LEFT:     // move left
+                mVelX = -SNAKE_VEL;
+                mVelY = 0; 
+                break;
+            case SDLK_RIGHT:    // move right
+                mVelX = SNAKE_VEL;
+                mVelY =  0; 
+                break;
+        }
+    }
+    // //If a key was released
+    // else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
+    // {
+    //     //Adjust the velocity
+    //     switch( e.key.keysym.sym )
+    //     {
+    //         case SDLK_UP: mVelY += SNAKE_VEL; break;  // stop moving left
+    //         case SDLK_DOWN: mVelY -= SNAKE_VEL; break;
+    //         case SDLK_LEFT: mVelX += SNAKE_VEL; break;    // stop moving up
+    //         case SDLK_RIGHT: mVelX -= SNAKE_VEL; break;
+    //     }
+    // }
+}
+
+//Store last position to posX, posY, and move snake collision box
+void Snake::move( int &posX, int &posY, bool &gameOverFlag )
+{
+    //Store last position; use reference &x to change arguments
+    posX = mBox.x;
+    posY = mBox.y;
+    //printf( "posX stored %i, posY stored %i\n", posX, posY );
+    
+    //Move the snake left or right
+    mBox.x += mVelX * TILE_WIDTH; 
+
+    //If the snake touches the boarder
+    if ( mBox.x < 0 )
+    {
+        mBox.x = 0;
+        gameOverFlag = true;
+    }
+    else if( mBox.x + TILE_WIDTH > SCREEN_WIDTH )
+    {
+        //Move back
+        mBox.x = SCREEN_WIDTH - TILE_WIDTH;
+        gameOverFlag = true;
+    }
+
+    //Move the snake up or down
+    mBox.y += mVelY * TILE_HEIGHT;
+
+    //If the snake touches the boarder
+    if ( mBox.y < 0 )
+    {
+        mBox.y = 0;
+        gameOverFlag = true;
+    }
+    else if( mBox.y + TILE_HEIGHT > SCREEN_HEIGHT )
+    {
+        //Move back
+        mBox.y = SCREEN_HEIGHT - TILE_HEIGHT;
+        gameOverFlag = true;
+    }
+    
+}
+
+//Add one body tile after eating food
+void Snake::addLength()
+{
+    ++mBody;
+}
+
+int Snake::getLength()
+{
+    return mBody;
+}
+
+void Snake::restart()
+{
+    //restart to initial condition(?)
+    //Snake( 360, 200 ); //why not working?
+
+    setPosition( 360, 200 );
+    
+    //Initialize the velocity
+    mVelX = -SNAKE_VEL;
+    mVelY = 0;
+
+    //Initialize the snake body length
+    mBody = 5;
+}
+
+
+// Class Button methods
 //Initializes
 Button::Button( int x, int y ) : Tile( x, y )
 {
@@ -240,119 +366,6 @@ void Button::render()
     }
 }
 
-
-// Class Snake methods
-Snake::Snake( int x, int y ) : Tile( x, y )
-{
-    //Initialize the offsets
-    setPosition( 360, 200 );
-
-    //Initialize the velocity
-    mVelX = -SNAKE_VEL;
-    mVelY = 0;
-
-    //Initialize the snake body length
-    mBody = 5;
-}
-
-void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
-{
-    //If a key was pressed but not a repeat. Only care when the key was first pressed
-    if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
-    {
-        //Adjust the velocity
-        switch( e.key.keysym.sym )
-        {
-            case SDLK_UP:  // move up
-                mVelX = 0;
-                mVelY = -SNAKE_VEL; 
-                break;
-            case SDLK_DOWN: // move down
-                mVelX = 0;
-                mVelY = SNAKE_VEL; 
-                break;
-            case SDLK_LEFT:     // move left
-                mVelX = -SNAKE_VEL;
-                mVelY = 0; 
-                break;
-            case SDLK_RIGHT:    // move right
-                mVelX = SNAKE_VEL;
-                mVelY =  0; 
-                break;
-        }
-    }
-    // //If a key was released
-    // else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
-    // {
-    //     //Adjust the velocity
-    //     switch( e.key.keysym.sym )
-    //     {
-    //         case SDLK_UP: mVelY += SNAKE_VEL; break;  // stop moving left
-    //         case SDLK_DOWN: mVelY -= SNAKE_VEL; break;
-    //         case SDLK_LEFT: mVelX += SNAKE_VEL; break;    // stop moving up
-    //         case SDLK_RIGHT: mVelX -= SNAKE_VEL; break;
-    //     }
-    // }
-}
-
-//Store last position to posX, posY, and move snake collision box
-void Snake::move( int &posX, int &posY, bool &gameOverFlag )
-{
-    //Store last position; use reference &x to change arguments
-    posX = mBox.x;
-    posY = mBox.y;
-    //printf( "posX stored %i, posY stored %i\n", posX, posY );
-    
-    //Move the snake left or right
-    mBox.x += mVelX * SNAKE_WIDTH; 
-
-    //If the snake touches the boarder
-    if ( mBox.x < 0 )
-    {
-        mBox.x = 0;
-        gameOverFlag = true;
-    }
-    else if( mBox.x + SNAKE_WIDTH > SCREEN_WIDTH )
-    {
-        //Move back
-        mBox.x = SCREEN_WIDTH - SNAKE_WIDTH;
-        gameOverFlag = true;
-    }
-
-    //Move the snake up or down
-    mBox.y += mVelY * SNAKE_HEIGHT;
-
-    //If the snake touches the boarder
-    if ( mBox.y < 0 )
-    {
-        mBox.y = 0;
-        gameOverFlag = true;
-    }
-    else if( mBox.y + SNAKE_HEIGHT > SCREEN_HEIGHT )
-    {
-        //Move back
-        mBox.y = SCREEN_HEIGHT - SNAKE_HEIGHT;
-        gameOverFlag = true;
-    }
-    
-}
-
-//Add one body tile after eating food
-void Snake::addLength()
-{
-    ++mBody;
-}
-
-int Snake::getLength()
-{
-    return mBody;
-}
-
-void Snake::restart()
-{
-    //restart to initial condition(?)
-    Snake();
-}
 
 // Initializes
 LTexture::LTexture()
