@@ -16,7 +16,7 @@
 const int BODY_LIMIT = 100;
 
 //The snake that will be moving around on the screen
-Snake snake;
+Snake snake( 360, 200 );
 //Snake body tiles
 SnakeBody* snakeBody[ BODY_LIMIT ];
 //Food to be eaten; initialized position
@@ -123,7 +123,7 @@ int main( int argc, char* args[] )
                     //snake.render();
                     for (int i = 0; i < snakeBodyLength; ++i)
                     {
-                        snakeBody[ i ]->render( i );
+                        snakeBody[ i ]->render();
                     }
                     snake.render();
 
@@ -168,10 +168,13 @@ int main( int argc, char* args[] )
                             snakeBody[ i ] = NULL;
                          }
                     }
+                    SnakeBody::snakeBodyNumber = 0;
 
                     //Renew snake and body tiles
-                    snake.restart();
+                    //snake.restart();
+                    snake = Snake( 360, 200 );
                     snakeBodyLength = snake.getLength();
+                    //printf( "snakeBodyLength = %i\n", snakeBodyLength );
                     posX = 360;   // set it as the offset X of snake head 
                     posY = 200;   // set it as the offset Y of snake head
 
@@ -189,7 +192,7 @@ int main( int argc, char* args[] )
                     //Render objects
                     for (int i = 0; i < snakeBodyLength; ++i)
                     {
-                        snakeBody[ i ]->render( i );
+                        snakeBody[ i ]->render();
                     }
                     snake.render();
 

@@ -20,7 +20,6 @@
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-
 // Global variables
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
@@ -43,15 +42,15 @@ enum SoundEffects
 
 Mix_Chunk* gSoundEffects[ SE_TOTAL ];
 
-//Texture to render
-LTexture gSnakeTexture;
-LTexture gBodyTexture[ 2 ];
-LTexture gFoodTexture;
+//Textures to render
+LTexture gTileTexture[ TYPE_TOTAL ];
 LTexture gTextTexture;
 LTexture gButtonOnTexture;
 LTexture gButtonOffTexture;
 
 LTexture gUITexture[ 2 ];
+
+int SnakeBody::snakeBodyNumber = 0;
 
 
 // Class Tile, used for snake body tiles
@@ -60,10 +59,12 @@ Tile::Tile( int x, int y )
 {
     //Get the offsets
     setPosition( x, y );
-    
-    // //Set the collision box
-    // mBox.w = TILE_WIDTH;
-    // mBox.h = TILE_HEIGHT;
+}
+
+//Render tile
+void Tile::render()
+{
+    gTileTexture[ mTileType ].render( mBox.x, mBox.y );
 }
 
 void Tile::setPosition( int x, int y )
@@ -80,6 +81,12 @@ void Tile::setSize( int w, int h )
     mBox.h = h;
 }
 
+void Tile::setTileType( unsigned int type )
+{
+    //Set the tile type
+    mTileType = static_cast<TileType>( type );
+}
+
 //Get the collision box
 SDL_Rect Tile::getBox()
 {
@@ -90,7 +97,8 @@ SDL_Rect Tile::getBox()
 //Initializes
 SnakeBody::SnakeBody( int x, int y ) : Tile( x, y )
 {
-    setSize( 20, 20 );
+    setTileType( snakeBodyNumber % TYPE_SNAKEHEAD );
+    ++snakeBodyNumber;
     // printf( "New snakeBody part created. Location %i, %i\n", x, y );
 }
 
@@ -121,19 +129,13 @@ void SnakeBody::move( int &posX, int &posY, SDL_Rect newRect, SDL_Rect headRect,
     posY = lastY;
 }
 
-//Render snake body tile; typeIndex default snake body length
-void SnakeBody::render( int typeIndex )
-{
-    unsigned int tileType = typeIndex % TYPE_TOTAL;
-    gBodyTexture[ tileType ].render( getBox().x, getBox().y ); 
-}
 
-
-// Class Food
+// Class Food methods
 //Initializes
 Food::Food( int x, int y ) : Tile( x, y )
 {
-    setSize( 20, 20 );
+    //Initialize the tile type
+    setTileType( TYPE_FOOD_0 );
     // printf( "New snakeBody part created. Location %i, %i\n", x, y );
 }
 
@@ -144,12 +146,6 @@ void Food::generate()
     int randX = rand() % 32;
     int randY = rand() % 24;
     setPosition( randX * 20, randY * 20 );
-}
-
-//Show food tile
-void Food::render()
-{
-    gFoodTexture.render( getBox().x, getBox().y );
 }
 
 //Check if touched by snake head;
@@ -164,7 +160,130 @@ bool Food::eaten( SDL_Rect snakeHead )
 }
 
 
-// Class Button, generated from Class Tile
+// Class Snake methods
+Snake::Snake( int x, int y ) : Tile( x, y )
+{
+    //Initialize the tile type
+    setTileType( TYPE_SNAKEHEAD );
+
+    //Initialize the velocity
+    mVelX = -SNAKE_VEL;
+    mVelY = 0;
+
+    //Initialize the snake body length
+    mBody = 5;
+}
+
+void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
+{
+    //If a key was pressed but not a repeat. Only care when the key was first pressed
+    if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
+    {
+        //Adjust the velocity
+        switch( e.key.keysym.sym )
+        {
+            case SDLK_UP:  // move up
+                mVelX = 0;
+                mVelY = -SNAKE_VEL; 
+                break;
+            case SDLK_DOWN: // move down
+                mVelX = 0;
+                mVelY = SNAKE_VEL; 
+                break;
+            case SDLK_LEFT:     // move left
+                mVelX = -SNAKE_VEL;
+                mVelY = 0; 
+                break;
+            case SDLK_RIGHT:    // move right
+                mVelX = SNAKE_VEL;
+                mVelY =  0; 
+                break;
+        }
+    }
+    // //If a key was released
+    // else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
+    // {
+    //     //Adjust the velocity
+    //     switch( e.key.keysym.sym )
+    //     {
+    //         case SDLK_UP: mVelY += SNAKE_VEL; break;  // stop moving left
+    //         case SDLK_DOWN: mVelY -= SNAKE_VEL; break;
+    //         case SDLK_LEFT: mVelX += SNAKE_VEL; break;    // stop moving up
+    //         case SDLK_RIGHT: mVelX -= SNAKE_VEL; break;
+    //     }
+    // }
+}
+
+//Store last position to posX, posY, and move snake collision box
+void Snake::move( int &posX, int &posY, bool &gameOverFlag )
+{
+    //Store last position; use reference &x to change arguments
+    posX = mBox.x;
+    posY = mBox.y;
+    //printf( "posX stored %i, posY stored %i\n", posX, posY );
+    
+    //Move the snake left or right
+    mBox.x += mVelX * TILE_WIDTH; 
+
+    //If the snake touches the boarder
+    if ( mBox.x < 0 )
+    {
+        mBox.x = 0;
+        gameOverFlag = true;
+    }
+    else if( mBox.x + TILE_WIDTH > SCREEN_WIDTH )
+    {
+        //Move back
+        mBox.x = SCREEN_WIDTH - TILE_WIDTH;
+        gameOverFlag = true;
+    }
+
+    //Move the snake up or down
+    mBox.y += mVelY * TILE_HEIGHT;
+
+    //If the snake touches the boarder
+    if ( mBox.y < 0 )
+    {
+        mBox.y = 0;
+        gameOverFlag = true;
+    }
+    else if( mBox.y + TILE_HEIGHT > SCREEN_HEIGHT )
+    {
+        //Move back
+        mBox.y = SCREEN_HEIGHT - TILE_HEIGHT;
+        gameOverFlag = true;
+    }
+    
+}
+
+//Add one body tile after eating food
+void Snake::addLength()
+{
+    ++mBody;
+}
+
+int Snake::getLength()
+{
+    return mBody;
+}
+
+void Snake::restart()
+{
+    //restart to initial condition(?)
+    //Snake( 360, 200 ); //why not working?
+
+    setPosition( 360, 200 );
+    
+    //Initialize the velocity
+    mVelX = -SNAKE_VEL;
+    mVelY = 0;
+
+    //Initialize the snake body length
+    mBody = 5;
+}
+
+
+// Class Button methods
 //Initializes
 Button::Button( int x, int y ) : Tile( x, y )
 {
@@ -247,158 +366,6 @@ void Button::render()
     }
 }
 
-
-// Class Snake
-Snake::Snake()
-{
-    //Initialize the offsets
-    mBox.x = 360;
-    mBox.y = 200;
-    
-    //Set the collision box
-    mBox.w = SNAKE_WIDTH;
-    mBox.h = SNAKE_HEIGHT;
-
-    //Initialize the velocity
-    mVelX = -SNAKE_VEL;
-    mVelY = 0;
-
-    //Initialize the snake body length
-    mBody = 5;
-}
-
-// //Deallocates particles
-// Snake::~Snake()
-// {
-//     for( int i = 0; i < TOTAL_PARTICLES; ++i )
-//     {
-//         particles[ i ]->mTexture = NULL;
-//         delete particles[ i ];
-//     }
-// }
-
-//Restart to default status
-// void restart()
-// {
-//     Snake();    
-// }
-
-void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
-{
-    //If a key was pressed but not a repeat. Only care when the key was first pressed
-    if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
-    {
-        //Adjust the velocity
-        switch( e.key.keysym.sym )
-        {
-            case SDLK_UP:  // move up
-                mVelX = 0;
-                mVelY = -SNAKE_VEL; 
-                break;
-            case SDLK_DOWN: // move down
-                mVelX = 0;
-                mVelY = SNAKE_VEL; 
-                break;
-            case SDLK_LEFT:     // move left
-                mVelX = -SNAKE_VEL;
-                mVelY = 0; 
-                break;
-            case SDLK_RIGHT:    // move right
-                mVelX = SNAKE_VEL;
-                mVelY =  0; 
-                break;
-        }
-    }
-    // //If a key was released
-    // else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
-    // {
-    //     //Adjust the velocity
-    //     switch( e.key.keysym.sym )
-    //     {
-    //         case SDLK_UP: mVelY += SNAKE_VEL; break;  // stop moving left
-    //         case SDLK_DOWN: mVelY -= SNAKE_VEL; break;
-    //         case SDLK_LEFT: mVelX += SNAKE_VEL; break;    // stop moving up
-    //         case SDLK_RIGHT: mVelX -= SNAKE_VEL; break;
-    //     }
-    // }
-}
-
-//Store last position to posX, posY, and move snake collision box
-void Snake::move( int &posX, int &posY, bool &gameOverFlag )
-{
-    //Store last position; use reference &x to change arguments
-    posX = mBox.x;
-    posY = mBox.y;
-    //printf( "posX stored %i, posY stored %i\n", posX, posY );
-    
-    //Move the snake left or right
-    mBox.x += mVelX * SNAKE_WIDTH; 
-
-    //If the snake touches the boarder
-    if ( mBox.x < 0 )
-    {
-        mBox.x = 0;
-        gameOverFlag = true;
-    }
-    else if( mBox.x + SNAKE_WIDTH > SCREEN_WIDTH )
-    {
-        //Move back
-        mBox.x = SCREEN_WIDTH - SNAKE_WIDTH;
-        gameOverFlag = true;
-    }
-
-    //Move the snake up or down
-    mBox.y += mVelY * SNAKE_HEIGHT;
-
-    //If the snake touches the boarder
-    if ( mBox.y < 0 )
-    {
-        mBox.y = 0;
-        gameOverFlag = true;
-    }
-    else if( mBox.y + SNAKE_HEIGHT > SCREEN_HEIGHT )
-    {
-        //Move back
-        mBox.y = SCREEN_HEIGHT - SNAKE_HEIGHT;
-        gameOverFlag = true;
-    }
-    
-}
-
-void Snake::render()
-{
-    //Show the snake relative to the camera
-    gSnakeTexture.render( mBox.x, mBox.y );
-}
-
-//Add one body tile after eating food
-void Snake::addLength()
-{
-    ++mBody;
-}
-
-int Snake::getLength()
-{
-    return mBody;
-}
-
-SDL_Rect Snake::getBox()
-{
-    return mBox;
-}
-
-void Snake::restart()
-{
-    mBox.x = 360;
-    mBox.y = 200;
-    
-    //Initialize the velocity
-    mVelX = -SNAKE_VEL;
-    mVelY = 0;
-
-    //Initialize the snake body length
-    mBody = 5;
-}
 
 // Initializes
 LTexture::LTexture()
@@ -808,27 +775,27 @@ bool loadMedia()
     bool success = true;
 
     //Load snake head, bocy, food texture
-    if( !gSnakeTexture.loadFromFile( "../../Resource/SnakeHead.png" ) )
-    {
-        printf( "Failed to load snake head texture!\n" );
-        success = false;
-    }
-    else if( !gFoodTexture.loadFromFile( "../../Resource/Food_0.png" ) )
-    {
-        printf( "Failed to load food texture!\n" );
-        success = false;
-    }
-
     for (int i = 0; i < 2; ++i)
     {
         filename.str( "" );
         filename << "../../Resource/SnakeBody_" << i << ".png";
 
-        if( !gBodyTexture[ i ].loadFromFile( filename.str().c_str() ) )
+        if( !gTileTexture[ i ].loadFromFile( filename.str().c_str() ) )
         {
             printf( "Failed to load snake body %i texture!\n", i );
             success = false;
         }
+    }
+
+    if( !gTileTexture[ TYPE_SNAKEHEAD ].loadFromFile( "../../Resource/SnakeHead.png" ) )
+    {
+        printf( "Failed to load snake head texture!\n" );
+        success = false;
+    }
+    else if( !gTileTexture[ TYPE_FOOD_0 ].loadFromFile( "../../Resource/Food_0.png" ) )
+    {
+        printf( "Failed to load food texture!\n" );
+        success = false;
     }
 
     //Load font texture
@@ -888,14 +855,11 @@ bool loadMedia()
 void close()
 {
     //Free loaded images
-    gSnakeTexture.free();
-    
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < TYPE_TOTAL; ++i)
     {
-        gBodyTexture[ i ].free();
+        gTileTexture[ i ].free();
     }
     
-    gFoodTexture.free();
     gTextTexture.free();
     gButtonOnTexture.free();
     gButtonOffTexture.free();
