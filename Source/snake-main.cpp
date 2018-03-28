@@ -174,7 +174,7 @@ int main( int argc, char* args[] )
                     //snake.restart();
                     snake = Snake( 360, 200 );
                     snakeBodyLength = snake.getLength();
-                    printf( "snakeBodyLength = %i\n", snakeBodyLength );
+                    //printf( "snakeBodyLength = %i\n", snakeBodyLength );
                     posX = 360;   // set it as the offset X of snake head 
                     posY = 200;   // set it as the offset Y of snake head
 

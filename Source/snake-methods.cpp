@@ -650,7 +650,8 @@ void UI::render()
     using namespace std;
 
     liveTimeText.str( "" );
-    liveTimeText << "LIVE TIME: " << fixed << setprecision(4) << liveTime.getTicks() / 1000.0;
+    liveTimeText << "LIVE TIME: " << fixed << setprecision(0) << liveTime.getTicks() / 1000.0;
+    //liveTimeText << "LIVE TIME: " << fixed << setprecision(4) << liveTime.getTicks() / 1000.0;
     //liveTimeText << "LIVE TIME: " << fixed << setprecision(2) << liveTime.getTicks();
     numFoodEatenText.str( "" );
     numFoodEatenText << "FOOD EATEN: " << numFoodEaten;
