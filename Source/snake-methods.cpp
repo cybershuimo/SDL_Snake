@@ -183,18 +183,34 @@ void Snake::handleEvent( SDL_Event& e )   // why not handleEvent( SDL_Event e )?
         switch( e.key.keysym.sym )
         {
             case SDLK_UP:  // move up
+                if ( mVelY > 0)
+                {
+                    break;  // Not allowed sharply turn back
+                }
                 mVelX = 0;
                 mVelY = -SNAKE_VEL; 
                 break;
             case SDLK_DOWN: // move down
+                if ( mVelY < 0)
+                {
+                    break;  // Not allowed sharply turn back
+                }
                 mVelX = 0;
                 mVelY = SNAKE_VEL; 
                 break;
             case SDLK_LEFT:     // move left
+                if ( mVelX > 0)
+                {
+                    break;  // Not allowed sharply turn back
+                }
                 mVelX = -SNAKE_VEL;
                 mVelY = 0; 
                 break;
             case SDLK_RIGHT:    // move right
+                if ( mVelX < 0)
+                {
+                    break;  // Not allowed sharply turn back
+                }
                 mVelX = SNAKE_VEL;
                 mVelY =  0; 
                 break;
