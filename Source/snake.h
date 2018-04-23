@@ -26,6 +26,7 @@ enum TileType
 };
 
 //Texture wrapper class
+//The LTexture class was originally from Lazy Foo' SDL Tutorials (http://lazyfoo.net/)
 class LTexture
 {
 public:        
@@ -212,6 +213,7 @@ private:
 
 
 //The application time based timer
+//The LTimer class was originally from Lazy Foo' SDL Tutorials (http://lazyfoo.net/) and modified to fit the game
 class LTimer
 {
 public:
